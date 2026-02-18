@@ -49,10 +49,11 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       }
       setIsListening(true);
       try {
-        const result = await listenForSpeech({ timeoutMs: 4000 });
+        const result = await listenForSpeech({ timeoutMs: 3000 });
         if (!mountedRef.current) {
           return { matched: false, confidence: "low", bestTranscript: "" };
         }
+        console.log("[WordPets] phoneme:", phoneme, "heard:", result.transcripts, "attempt:", attempt);
         return matchPhoneme(phoneme, result.transcripts, attempt >= 1);
       } finally {
         if (mountedRef.current) setIsListening(false);
@@ -68,10 +69,11 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       }
       setIsListening(true);
       try {
-        const result = await listenForSpeech({ timeoutMs: 5000 });
+        const result = await listenForSpeech({ timeoutMs: 4000 });
         if (!mountedRef.current) {
           return { matched: false, confidence: "low", bestTranscript: "" };
         }
+        console.log("[WordPets] word:", word, "heard:", result.transcripts, "attempt:", attempt);
         return matchWord(word, result.transcripts, attempt >= 1);
       } finally {
         if (mountedRef.current) setIsListening(false);

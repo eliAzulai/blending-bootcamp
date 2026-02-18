@@ -121,13 +121,20 @@ export function matchPhoneme(
     }
   }
 
-  // Tier 3: If lenient mode (2nd attempt), accept ANY sound
-  if (lenient && normalized.some((t) => t.length > 0)) {
+  // Tier 3: Accept ANY sound the child made — the recognizer just
+  // isn't good at isolated phonemes. The child IS practicing the
+  // sound, we just can't verify it reliably.
+  if (normalized.some((t) => t.length > 0)) {
     return {
       matched: true,
       confidence: "low",
       bestTranscript: normalized[0],
     };
+  }
+
+  // Tier 4: If lenient (2nd attempt) and no transcript at all, still pass
+  if (lenient) {
+    return { matched: true, confidence: "low", bestTranscript: "" };
   }
 
   return { ...empty, bestTranscript: normalized[0] ?? "" };
@@ -191,9 +198,14 @@ export function matchWord(
     }
   }
 
-  // Tier 5: Lenient mode — accept any sound
-  if (lenient && normalized.some((t) => t.length > 0)) {
+  // Tier 5: Accept any non-empty sound (recogniser heard something)
+  if (normalized.some((t) => t.length > 0)) {
     return { matched: true, confidence: "low", bestTranscript: normalized[0] };
+  }
+
+  // Tier 6: Lenient mode — even silence passes
+  if (lenient) {
+    return { matched: true, confidence: "low", bestTranscript: "" };
   }
 
   return { ...empty, bestTranscript: normalized[0] ?? "" };
