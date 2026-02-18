@@ -1,0 +1,22 @@
+{
+  "name": "Blending Bootcamp",
+  "short_name": "BlendBoot",
+  "description": "Learn to blend sounds into words in 14 days!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8E1",
+  "theme_color": "#FFA726",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
