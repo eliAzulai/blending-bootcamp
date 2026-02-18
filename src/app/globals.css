@@ -141,3 +141,97 @@ body {
 .animate-star-spin {
   animation: star-spin 0.8s ease-out forwards;
 }
+
+/* ---- Mic button animations ---- */
+
+/* Idle pulse ring */
+@keyframes mic-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(124, 58, 237, 0);
+  }
+}
+.animate-mic-pulse {
+  animation: mic-pulse 2s ease-in-out infinite;
+}
+
+/* Listening scale-breathe */
+@keyframes mic-listen {
+  0%, 100% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+.animate-mic-listen {
+  animation: mic-listen 0.8s ease-in-out infinite;
+}
+
+/* Sound wave rings */
+@keyframes mic-wave {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.animate-mic-wave-1 {
+  animation: mic-wave 1.5s ease-out infinite;
+}
+.animate-mic-wave-2 {
+  animation: mic-wave 1.5s ease-out 0.3s infinite;
+}
+.animate-mic-wave-3 {
+  animation: mic-wave 1.5s ease-out 0.6s infinite;
+}
+
+/* Incorrect shake */
+@keyframes mic-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.animate-mic-shake {
+  animation: mic-shake 0.5s ease-out;
+}
+
+/* Phoneme card listening glow */
+@keyframes card-listen-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(13, 148, 136, 0);
+  }
+}
+.animate-card-listen {
+  animation: card-listen-glow 1.2s ease-in-out infinite;
+}
+
+/* Phoneme card correct pop */
+@keyframes card-correct {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.animate-card-correct {
+  animation: card-correct 0.4s ease-out;
+}
+
+/* Phoneme card incorrect wobble */
+@keyframes card-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+.animate-card-wobble {
+  animation: card-wobble 0.4s ease-out;
+}

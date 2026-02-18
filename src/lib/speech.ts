@@ -3,6 +3,13 @@
  * Placeholder until real recorded audio is added.
  */
 
+/** Cancel any in-progress TTS. Call before activating the mic. */
+export function cancelSpeech(): void {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+}
+
 export function speakPhoneme(phoneme: string): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {

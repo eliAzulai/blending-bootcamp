@@ -2,14 +2,21 @@
 
 import { useCallback } from "react";
 
-export type PhonemeState = "idle" | "active" | "blended";
+export type PhonemeState =
+  | "idle"
+  | "active"
+  | "listening"
+  | "correct"
+  | "incorrect"
+  | "skipped"
+  | "blended";
 
 interface PhonemeCardProps {
   /** The phoneme text to display (e.g. "c", "sh", "igh"). */
   text: string;
   /** Visual state of the card. */
   state: PhonemeState;
-  /** Called when the child taps this card. */
+  /** Called when the child taps this card (tap mode). */
   onTap: () => void;
   /** Index used for staggered animation delays. */
   index: number;
@@ -54,6 +61,36 @@ const ACTIVE_COLOURS = [
   { bg: "bg-pink-400", border: "border-pink-600", text: "text-pink-950" },
 ];
 
+function getColours(state: PhonemeState, index: number) {
+  const idx = index % IDLE_COLOURS.length;
+
+  switch (state) {
+    case "listening":
+      return {
+        bg: "bg-teal-200",
+        border: "border-teal-400",
+        text: "text-teal-900",
+      };
+    case "correct":
+      return {
+        bg: "bg-green-300",
+        border: "border-green-500",
+        text: "text-green-900",
+      };
+    case "incorrect":
+      return {
+        bg: "bg-amber-200",
+        border: "border-amber-400",
+        text: "text-amber-900",
+      };
+    case "idle":
+      return IDLE_COLOURS[idx];
+    default:
+      // active, blended, skipped all use active colours
+      return ACTIVE_COLOURS[idx];
+  }
+}
+
 export default function PhonemeCard({
   text,
   state,
@@ -61,21 +98,17 @@ export default function PhonemeCard({
   index,
   total,
 }: PhonemeCardProps) {
-  const colourIdx = index % IDLE_COLOURS.length;
-  const colours = state === "idle" ? IDLE_COLOURS[colourIdx] : ACTIVE_COLOURS[colourIdx];
+  const colours = getColours(state, index);
 
   const handleClick = useCallback(() => {
     if (state === "idle") onTap();
   }, [state, onTap]);
 
-  // When blending, cards slide toward the centre.  We calculate a
-  // translateX that pulls them together.  The middle card stays put;
-  // cards to the left move right, cards to the right move left.
+  // When blending, cards slide toward the centre.
   const blendOffset = (() => {
     if (state !== "blended") return "translateX(0)";
     const centre = (total - 1) / 2;
     const delta = centre - index;
-    // Each unit of delta moves the card ~40px toward centre.
     return `translateX(${delta * 40}px)`;
   })();
 
@@ -97,8 +130,11 @@ export default function PhonemeCard({
         colours.text,
         // Cursor
         state === "idle" ? "cursor-pointer" : "cursor-default",
-        // Scale pop on active
+        // State-specific animations
         state === "active" ? "scale-110" : "",
+        state === "listening" ? "animate-card-listen" : "",
+        state === "correct" ? "animate-card-correct" : "",
+        state === "incorrect" ? "animate-card-wobble" : "",
         // Transitions
         "transition-all duration-300 ease-out",
       ]
@@ -108,9 +144,11 @@ export default function PhonemeCard({
         transform:
           state === "blended"
             ? `${blendOffset} scale(1)`
-            : state === "active"
+            : state === "active" || state === "correct"
               ? "scale(1.15)"
-              : "scale(1)",
+              : state === "listening"
+                ? "scale(1.08)"
+                : "scale(1)",
         transitionProperty: "transform, background-color, border-color",
         transitionDuration: "400ms",
         transitionTimingFunction: "cubic-bezier(.34,1.56,.64,1)",
@@ -120,6 +158,23 @@ export default function PhonemeCard({
       {/* Subtle shadow ring when active */}
       {state === "active" && (
         <span className="pointer-events-none absolute inset-0 animate-ping rounded-3xl border-4 border-white opacity-40" />
+      )}
+      {/* Mic indicator when listening */}
+      {state === "listening" && (
+        <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-teal-500 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+            <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
+            <path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.93V21h-2a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.07A7 7 0 0 0 19 11Z" />
+          </svg>
+        </span>
+      )}
+      {/* Checkmark overlay when correct */}
+      {state === "correct" && (
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-3xl bg-green-400/40">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="h-10 w-10 drop-shadow">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z" />
+          </svg>
+        </span>
       )}
     </button>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, supabaseIsConfigured } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -29,13 +29,20 @@ export default function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!supabaseIsConfigured()) {
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
 
     // Get initial session
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
+    async function fetchUser() {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
       setLoading(false);
-    });
+    }
+    fetchUser();
 
     // Listen for auth changes
     const {
@@ -49,6 +56,7 @@ export default function AuthProvider({
   }, []);
 
   async function signOut() {
+    if (!supabaseIsConfigured()) return;
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
