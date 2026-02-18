@@ -1,12 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-warm-50: #FFF8E1;
-  --color-warm-100: #FFECB3;
-  --color-warm-200: #FFE082;
-  --color-warm-300: #FFD54F;
-  --color-warm-400: #FFCA28;
-  --color-warm-500: #FFC107;
+  --color-cream-50: #FFF8E1;
+  --color-cream-100: #FFF0D0;
+  --color-cream-200: #FFE8B8;
+
+  --color-wp-purple: #7C3AED;
+  --color-wp-purple-dark: #5B21B6;
+  --color-wp-purple-light: #A78BFA;
+
+  --color-wp-teal: #0D9488;
+  --color-wp-teal-dark: #0F766E;
+  --color-wp-teal-light: #5EEAD4;
+
+  --color-wp-coral: #F97316;
+  --color-wp-coral-light: #FDBA74;
 
   --color-sky-400: #38BDF8;
   --color-sky-500: #0EA5E9;
@@ -32,7 +40,7 @@ html {
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
-  color: #1a1a2e;
+  color: #2D1B69;
 }
 
 /* Phoneme slide animation */
@@ -106,10 +114,10 @@ body {
 /* Pulse glow for active elements */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 167, 38, 0.4);
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(255, 167, 38, 0);
+    box-shadow: 0 0 0 12px rgba(124, 58, 237, 0);
   }
 }
 

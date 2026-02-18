@@ -15,17 +15,17 @@ export default function ProgressBar({ current, total }: ProgressBarProps) {
   return (
     <div className="w-full px-4">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-base font-bold text-orange-700">
+        <span className="text-base font-bold text-purple-700">
           Word {Math.min(current + 1, total)} of {total}
         </span>
-        <span className="text-sm font-semibold text-orange-500">{pct}%</span>
+        <span className="text-sm font-semibold text-purple-500">{pct}%</span>
       </div>
-      <div className="h-5 w-full overflow-hidden rounded-full bg-orange-100">
+      <div className="h-5 w-full overflow-hidden rounded-full bg-purple-100">
         <div
           className="h-full rounded-full transition-all duration-500 ease-out"
           style={{
             width: `${pct}%`,
-            background: "linear-gradient(90deg, #f59e0b, #f97316, #ef4444)",
+            background: "linear-gradient(90deg, #7C3AED, #0D9488, #10B981)",
           }}
         />
       </div>

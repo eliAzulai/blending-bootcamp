@@ -36,10 +36,15 @@
 | 20 | Git init | Done | |
 | 21 | Production build verification | Done | `next build` passes, all 18 routes generated |
 | 22 | Dev server running | Done | http://localhost:3000 |
-| 23 | Supabase integration (auth + data) | Pending | |
-| 24 | Stripe paywall at Day 4 | Pending | |
-| 25 | Parent dashboard | Pending | |
-| 26 | Service worker for offline | Pending | |
+| 23 | Supabase integration (auth + data) | Done | Auth flows, RLS policies, progress sync |
+| 24 | WordPets rebrand & asset integration | Done | Logo, colors (purple/teal/cream), all pages rebranded |
+| 25 | Stripe paywall at Day 4 | Pending | |
+| 26 | Parent dashboard | Pending | |
+| 27 | Service worker for offline | Pending | |
+| 28 | Pet Care screen | Pending | Reward loop from WordPets lesson flow |
+| 29 | Audiobook story player | Pending | Part of lesson loop |
+| 30 | Tracing component (Canvas) | Pending | Letter tracing mechanic |
+| 31 | Word-hunt game | Pending | Gamified word recognition |
 
 ### Blockers / Questions for User (batched)
 1. **Git identity not configured** — need your name/email for commits (`git config --global user.name` / `user.email`)

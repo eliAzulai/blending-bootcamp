@@ -71,7 +71,7 @@ export default function LessonScreen({ lesson }: LessonScreenProps) {
   const currentWord = words[currentWordIndex];
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-sky-100 via-white to-green-50">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FFF8E1] via-white to-[#E8F5E9]">
       {/* Header */}
       <header className="flex flex-col items-center gap-3 px-4 pt-6 pb-2">
         <div className="flex w-full max-w-md items-center justify-between">
@@ -82,11 +82,11 @@ export default function LessonScreen({ lesson }: LessonScreenProps) {
           >
             &#8592;
           </a>
-          <span className="rounded-full bg-orange-100 px-4 py-1 text-base font-bold text-orange-700">
+          <span className="rounded-full bg-purple-100 px-4 py-1 text-base font-bold text-purple-700">
             Day {day}
           </span>
         </div>
-        <h1 className="text-center text-3xl font-extrabold text-sky-700">
+        <h1 className="text-center text-3xl font-extrabold text-purple-700">
           {title}
         </h1>
       </header>

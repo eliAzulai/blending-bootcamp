@@ -48,7 +48,7 @@ export default function SignupPage() {
           </p>
           <Link
             href="/login"
-            className="mt-6 inline-block rounded-xl bg-orange-500 px-6 py-3 font-bold text-white shadow-md hover:bg-orange-600"
+            className="mt-6 inline-block rounded-xl bg-purple-600 px-6 py-3 font-bold text-white shadow-md hover:bg-purple-700"
           >
             Back to Sign In
           </Link>
@@ -60,7 +60,7 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-xl">
-        <h1 className="mb-2 text-center text-3xl font-extrabold text-orange-600">
+        <h1 className="mb-2 text-center text-3xl font-extrabold text-purple-700">
           Create Account
         </h1>
         <p className="mb-6 text-center text-sm text-gray-500">
@@ -74,7 +74,7 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-orange-400"
+            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
             style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
           <input
@@ -84,7 +84,7 @@ export default function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-orange-400"
+            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
             style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
 
@@ -97,7 +97,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-orange-500 px-6 py-3 text-lg font-bold text-white shadow-md transition-all hover:bg-orange-600 active:scale-95 disabled:opacity-50"
+            className="rounded-xl bg-purple-600 px-6 py-3 text-lg font-bold text-white shadow-md transition-all hover:bg-purple-700 active:scale-95 disabled:opacity-50"
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
@@ -107,7 +107,7 @@ export default function SignupPage() {
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-semibold text-orange-500 hover:text-orange-600"
+            className="font-semibold text-purple-600 hover:text-purple-700"
           >
             Sign In
           </Link>

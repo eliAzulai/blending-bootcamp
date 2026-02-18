@@ -1,11 +1,11 @@
 {
-  "name": "Blending Bootcamp",
-  "short_name": "BlendBoot",
-  "description": "Learn to blend sounds into words in 14 days!",
+  "name": "WordPets",
+  "short_name": "WordPets",
+  "description": "Learn to read with your pet friends!",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFF8E1",
-  "theme_color": "#FFA726",
+  "theme_color": "#7C3AED",
   "orientation": "portrait",
   "icons": [
     {

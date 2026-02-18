@@ -125,7 +125,7 @@ export default function BlendingExercise({
           {nextIndex < phonemes.length ? (
             <>
               Tap{" "}
-              <span className="font-bold text-orange-400">
+              <span className="font-bold text-purple-500">
                 {phonemes[nextIndex]}
               </span>
             </>

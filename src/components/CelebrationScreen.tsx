@@ -31,7 +31,7 @@ export default function CelebrationScreen({
     minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds} seconds`;
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-yellow-200 via-orange-100 to-pink-200 px-6 py-12">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-purple-200 via-[#FFF8E1] to-teal-100 px-6 py-12">
       {/* Confetti dots */}
       <ConfettiLayer />
 
@@ -46,11 +46,11 @@ export default function CelebrationScreen({
           &#11088;
         </span>
 
-        <h1 className="text-center text-5xl font-extrabold text-orange-600">
+        <h1 className="text-center text-5xl font-extrabold text-purple-700">
           You did it!
         </h1>
 
-        <p className="text-center text-2xl font-semibold text-orange-800">
+        <p className="text-center text-2xl font-semibold text-purple-800">
           Amazing job blending sounds today!
         </p>
 
@@ -75,7 +75,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-3">
       <span className="text-lg font-medium text-gray-600">{label}:</span>
-      <span className="text-2xl font-bold text-orange-600">{value}</span>
+      <span className="text-2xl font-bold text-purple-600">{value}</span>
     </div>
   );
 }

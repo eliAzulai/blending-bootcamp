@@ -3,13 +3,13 @@ import AuthProvider from "@/components/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Blending Bootcamp",
-  description: "Learn to blend sounds into words in 14 days!",
+  title: "WordPets",
+  description: "Learn to read with your pet friends!",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Blending Bootcamp",
+    title: "WordPets",
   },
 };
 
@@ -18,7 +18,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#FFA726",
+  themeColor: "#7C3AED",
 };
 
 export default function RootLayout({
@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 antialiased">
+      <body className="min-h-screen bg-gradient-to-b from-[#FFF8E1] to-[#FFF0D0] antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

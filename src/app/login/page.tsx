@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-xl">
-        <h1 className="mb-2 text-center text-3xl font-extrabold text-orange-600">
+        <h1 className="mb-2 text-center text-3xl font-extrabold text-purple-700">
           Welcome Back!
         </h1>
         <p className="mb-6 text-center text-sm text-gray-500">
@@ -49,7 +49,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-orange-400"
+            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
             style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
           <input
@@ -59,7 +59,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-orange-400"
+            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
             style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
 
@@ -72,7 +72,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-orange-500 px-6 py-3 text-lg font-bold text-white shadow-md transition-all hover:bg-orange-600 active:scale-95 disabled:opacity-50"
+            className="rounded-xl bg-purple-600 px-6 py-3 text-lg font-bold text-white shadow-md transition-all hover:bg-purple-700 active:scale-95 disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
@@ -82,7 +82,7 @@ export default function LoginPage() {
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="font-semibold text-orange-500 hover:text-orange-600"
+            className="font-semibold text-purple-600 hover:text-purple-700"
           >
             Sign Up
           </Link>

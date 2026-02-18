@@ -1,36 +1,37 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { curriculum } from "@/data/curriculum";
 import { getDaysCompleted, getWordsBlended } from "@/lib/progress";
 
 /**
- * Colour palette per phase.
+ * Colour palette per phase — WordPets brand (purple + teal + coral).
  */
 const PHASE_COLOURS: Record<
   number,
   { bg: string; border: string; text: string; badge: string; glow: string }
 > = {
   1: {
-    bg: "bg-yellow-400",
-    border: "border-yellow-500",
-    text: "text-yellow-900",
-    badge: "bg-yellow-100 text-yellow-800",
-    glow: "shadow-yellow-300/60",
+    bg: "bg-purple-500",
+    border: "border-purple-600",
+    text: "text-purple-900",
+    badge: "bg-purple-100 text-purple-800",
+    glow: "shadow-purple-300/60",
   },
   2: {
-    bg: "bg-sky-400",
-    border: "border-sky-500",
-    text: "text-sky-900",
-    badge: "bg-sky-100 text-sky-800",
-    glow: "shadow-sky-300/60",
+    bg: "bg-teal-500",
+    border: "border-teal-600",
+    text: "text-teal-900",
+    badge: "bg-teal-100 text-teal-800",
+    glow: "shadow-teal-300/60",
   },
   3: {
-    bg: "bg-green-400",
-    border: "border-green-500",
-    text: "text-green-900",
-    badge: "bg-green-100 text-green-800",
-    glow: "shadow-green-300/60",
+    bg: "bg-orange-400",
+    border: "border-orange-500",
+    text: "text-orange-900",
+    badge: "bg-orange-100 text-orange-800",
+    glow: "shadow-orange-300/60",
   },
 };
 
@@ -61,17 +62,22 @@ export default function HomePage() {
   let lastPhase = 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-yellow-50 to-sky-50">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E1] via-[#FFF0D0] to-[#E8F5E9]">
       {/* Hero */}
-      <header className="flex flex-col items-center gap-2 px-4 pt-10 pb-4 text-center">
-        <h1 className="text-5xl font-extrabold tracking-tight text-orange-600">
-          Blending Bootcamp
-        </h1>
-        <p className="max-w-xs text-xl font-medium text-orange-800/80">
-          Learn to blend sounds into words in 14 days!
+      <header className="flex flex-col items-center gap-3 px-4 pt-8 pb-2 text-center">
+        <Image
+          src="/wordpets/logo.png"
+          alt="WordPets"
+          width={220}
+          height={110}
+          priority
+          className="drop-shadow-lg"
+        />
+        <p className="max-w-xs text-lg font-semibold text-purple-800/80">
+          Learn to read with your pet friends!
         </p>
         {mounted && totalWords > 0 && (
-          <span className="mt-2 rounded-full bg-orange-100 px-4 py-1 text-base font-bold text-orange-700">
+          <span className="mt-1 rounded-full bg-purple-100 px-4 py-1 text-base font-bold text-purple-700">
             {totalWords} words blended so far
           </span>
         )}
@@ -81,7 +87,7 @@ export default function HomePage() {
       <main className="mx-auto max-w-md px-6 pb-16 pt-4">
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-8 top-0 h-full w-1 rounded-full bg-orange-200" />
+          <div className="absolute left-8 top-0 h-full w-1 rounded-full bg-purple-200" />
 
           <ul className="relative flex flex-col gap-0">
             {curriculum.map((lesson) => {
@@ -119,7 +125,7 @@ export default function HomePage() {
                           isCompleted
                             ? `${colours.bg} ${colours.border} text-white shadow-lg ${colours.glow}`
                             : isCurrent
-                              ? `bg-white ${colours.border} ${colours.text} shadow-lg ring-4 ring-orange-200 animate-pulse`
+                              ? `bg-white ${colours.border} ${colours.text} shadow-lg ring-4 ring-purple-200 animate-pulse`
                               : "border-gray-300 bg-gray-100 text-gray-400",
                         ].join(" ")}
                       >
@@ -152,7 +158,7 @@ export default function HomePage() {
                           isCompleted
                             ? `${colours.border} bg-white shadow hover:shadow-md`
                             : isCurrent
-                              ? `${colours.border} bg-white shadow-md hover:shadow-lg ring-2 ring-orange-100`
+                              ? `${colours.border} bg-white shadow-md hover:shadow-lg ring-2 ring-purple-100`
                               : `${colours.border} bg-white shadow hover:shadow-md`,
                           "hover:scale-[1.02] active:scale-[0.98]",
                         ].join(" ")}
@@ -171,7 +177,7 @@ export default function HomePage() {
                               Completed &#10003;
                             </span>
                           ) : isCurrent ? (
-                            <span className="text-orange-600">
+                            <span className="text-purple-600">
                               Start lesson &#8594;
                             </span>
                           ) : (
@@ -191,8 +197,8 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="pb-8 text-center text-sm text-gray-400">
-        Blending Bootcamp &mdash; 14 days to reading
+      <footer className="pb-8 text-center text-sm text-purple-400/70">
+        WordPets &mdash; 14 days to reading
       </footer>
     </div>
   );
