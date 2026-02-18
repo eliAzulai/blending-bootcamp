@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   isSpeechRecognitionSupported,
   requestMicPermission,
@@ -11,19 +11,12 @@ import {
 import { matchPhoneme, matchWord, type MatchResult } from "@/lib/phoneme-matching";
 
 export interface UseSpeechRecognitionReturn {
-  /** Browser supports SpeechRecognition */
   isSupported: boolean;
-  /** Mic permission has been granted */
   isPermissionGranted: boolean;
-  /** Currently listening for speech */
   isListening: boolean;
-  /** Request mic permission (call once at lesson start) */
   requestPermission: () => Promise<boolean>;
-  /** Listen for a phoneme — returns match result */
   listenForPhoneme: (phoneme: string, attempt: number) => Promise<MatchResult>;
-  /** Listen for a word — returns match result */
   listenForWord: (word: string, attempt: number) => Promise<MatchResult>;
-  /** Cancel in-progress listening */
   cancel: () => void;
 }
 
@@ -54,14 +47,12 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       if (!mountedRef.current) {
         return { matched: false, confidence: "low", bestTranscript: "" };
       }
-
       setIsListening(true);
       try {
         const result = await listenForSpeech({ timeoutMs: 4000 });
         if (!mountedRef.current) {
           return { matched: false, confidence: "low", bestTranscript: "" };
         }
-        // On second attempt, be lenient (accept any sound)
         return matchPhoneme(phoneme, result.transcripts, attempt >= 1);
       } finally {
         if (mountedRef.current) setIsListening(false);
@@ -75,7 +66,6 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       if (!mountedRef.current) {
         return { matched: false, confidence: "low", bestTranscript: "" };
       }
-
       setIsListening(true);
       try {
         const result = await listenForSpeech({ timeoutMs: 5000 });
@@ -95,13 +85,17 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     if (mountedRef.current) setIsListening(false);
   }, []);
 
-  return {
-    isSupported,
-    isPermissionGranted,
-    isListening,
-    requestPermission,
-    listenForPhoneme,
-    listenForWord,
-    cancel,
-  };
+  // Memoize the return object so consumers get a stable reference.
+  return useMemo(
+    () => ({
+      isSupported,
+      isPermissionGranted,
+      isListening,
+      requestPermission,
+      listenForPhoneme,
+      listenForWord,
+      cancel,
+    }),
+    [isSupported, isPermissionGranted, isListening, requestPermission, listenForPhoneme, listenForWord, cancel],
+  );
 }

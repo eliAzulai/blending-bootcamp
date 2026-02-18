@@ -52,8 +52,15 @@ export default function BlendingExercise({
   onComplete,
   speechEnabled = false,
 }: BlendingExerciseProps) {
-  const speech = useSpeechRecognition();
-  const useSpeech = speechEnabled && speech.isSupported && speech.isPermissionGranted;
+  const {
+    isSupported: srSupported,
+    isPermissionGranted: srPermitted,
+    isListening: srListening,
+    listenForPhoneme: srListenPhoneme,
+    listenForWord: srListenWord,
+    cancel: srCancel,
+  } = useSpeechRecognition();
+  const useSpeech = speechEnabled && srSupported && srPermitted;
 
   // Card states
   const [states, setStates] = useState<PhonemeState[]>(
@@ -73,9 +80,10 @@ export default function BlendingExercise({
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      speech.cancel();
+      srCancel();
     };
-  }, [speech]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset when word changes
   useEffect(() => {
@@ -132,7 +140,7 @@ export default function BlendingExercise({
     cancelSpeech();
 
     (async () => {
-      const result = await speech.listenForPhoneme(
+      const result = await srListenPhoneme(
         phonemes[nextIndex],
         phonemeAttempts.current,
       );
@@ -152,9 +160,10 @@ export default function BlendingExercise({
 
     return () => {
       cancelled = true;
-      speech.cancel();
+      srCancel();
     };
-  }, [stage, nextIndex, phonemes, speech]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, nextIndex, phonemes]);
 
   // --- Phoneme correct: brief celebration, advance
   useEffect(() => {
@@ -327,7 +336,7 @@ export default function BlendingExercise({
     setMessage("Say the word!");
     cancelSpeech();
 
-    const result = await speech.listenForWord(word, wordAttempts.current);
+    const result = await srListenWord(word, wordAttempts.current);
     if (!mountedRef.current) return;
 
     if (result.matched) {
@@ -340,7 +349,8 @@ export default function BlendingExercise({
         setStage("word-incorrect");
       }
     }
-  }, [stage, word, speech]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, word]);
 
   /* =====================================================
    * TAP MODE — original flow (fallback)
@@ -400,7 +410,7 @@ export default function BlendingExercise({
 
   // Mic button state for word phase
   const wordMicState = (() => {
-    if (stage === "word-listen" && speech.isListening) return "listening" as const;
+    if (stage === "word-listen" && srListening) return "listening" as const;
     if (stage === "word-listen") return "idle" as const;
     if (stage === "word-correct") return "correct" as const;
     if (stage === "word-incorrect") return "incorrect" as const;
@@ -478,9 +488,9 @@ export default function BlendingExercise({
             onTap={handleWordMicTap}
             size="lg"
             label={
-              stage === "word-listen" && !speech.isListening
+              stage === "word-listen" && !srListening
                 ? "Tap to say the word!"
-                : stage === "word-listen" && speech.isListening
+                : stage === "word-listen" && srListening
                   ? "Listening..."
                   : stage === "word-correct"
                     ? message
