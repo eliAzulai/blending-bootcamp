@@ -43,18 +43,27 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   }, []);
 
   const listenForPhoneme = useCallback(
-    async (phoneme: string, attempt: number): Promise<MatchResult> => {
+    async (phoneme: string, _attempt: number): Promise<MatchResult> => {
       if (!mountedRef.current) {
         return { matched: false, confidence: "low", bestTranscript: "" };
       }
       setIsListening(true);
       try {
-        const result = await listenForSpeech({ timeoutMs: 3000 });
+        // Give the child 2 seconds to say the sound.
+        // Individual phonemes are too short for the Web Speech API to
+        // reliably detect, so we treat the act of listening as practice.
+        const result = await listenForSpeech({ timeoutMs: 2000 });
         if (!mountedRef.current) {
           return { matched: false, confidence: "low", bestTranscript: "" };
         }
-        console.log("[WordPets] phoneme:", phoneme, "heard:", result.transcripts, "attempt:", attempt);
-        return matchPhoneme(phoneme, result.transcripts, attempt >= 1);
+        const heard = result.transcripts.length > 0;
+        console.log("[WordPets] phoneme:", phoneme, "heard:", result.transcripts);
+        // Always pass — the child practiced saying the sound
+        return {
+          matched: true,
+          confidence: heard ? "high" : "medium",
+          bestTranscript: result.transcripts[0] ?? "",
+        };
       } finally {
         if (mountedRef.current) setIsListening(false);
       }
@@ -69,7 +78,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       }
       setIsListening(true);
       try {
-        const result = await listenForSpeech({ timeoutMs: 4000 });
+        const result = await listenForSpeech({ timeoutMs: 3000 });
         if (!mountedRef.current) {
           return { matched: false, confidence: "low", bestTranscript: "" };
         }

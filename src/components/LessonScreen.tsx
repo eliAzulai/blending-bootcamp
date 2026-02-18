@@ -31,23 +31,32 @@ export default function LessonScreen({ lesson }: LessonScreenProps) {
   // Speech recognition setup
   const speech = useSpeechRecognition();
   const [speechEnabled, setSpeechEnabled] = useState(false);
-  const [showMicPrompt, setShowMicPrompt] = useState(false);
-  const [micPromptDismissed, setMicPromptDismissed] = useState(false);
+  const [micResolved, setMicResolved] = useState(false);
 
   // Timer
   const startTime = useRef(Date.now());
   const [elapsed, setElapsed] = useState(0);
 
-  // Request mic permission on mount
+  // Auto-request mic permission on mount — wait for result before showing lesson
   useEffect(() => {
-    if (!speech.isSupported) return;
-    if (speech.isPermissionGranted) {
-      setSpeechEnabled(true);
+    if (!speech.isSupported) {
+      console.log("[WordPets] SR not supported, using tap mode");
+      setMicResolved(true);
       return;
     }
-    // Show friendly mic prompt
-    setShowMicPrompt(true);
-  }, [speech.isSupported, speech.isPermissionGranted]);
+    let cancelled = false;
+    (async () => {
+      console.log("[WordPets] Requesting mic permission...");
+      const granted = await speech.requestPermission();
+      console.log("[WordPets] Mic permission result:", granted);
+      if (!cancelled) {
+        setSpeechEnabled(granted);
+        setMicResolved(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Tick the timer every second while the lesson is in progress.
   useEffect(() => {
@@ -57,19 +66,6 @@ export default function LessonScreen({ lesson }: LessonScreenProps) {
     }, 1000);
     return () => clearInterval(id);
   }, [finished]);
-
-  const handleMicAllow = useCallback(async () => {
-    const granted = await speech.requestPermission();
-    setSpeechEnabled(granted);
-    setShowMicPrompt(false);
-    setMicPromptDismissed(true);
-  }, [speech]);
-
-  const handleMicSkip = useCallback(() => {
-    setSpeechEnabled(false);
-    setShowMicPrompt(false);
-    setMicPromptDismissed(true);
-  }, []);
 
   /** Called when the child completes a single word exercise. */
   const handleWordComplete = useCallback(() => {
@@ -98,48 +94,11 @@ export default function LessonScreen({ lesson }: LessonScreenProps) {
     );
   }
 
-  // Show mic permission prompt before starting the lesson
-  if (showMicPrompt && !micPromptDismissed) {
+  // Wait for mic permission to resolve before rendering lesson
+  if (!micResolved) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#FFF8E1] via-white to-[#E8F5E9] px-6">
-        <div className="flex max-w-sm flex-col items-center gap-6 rounded-3xl bg-white p-8 text-center shadow-xl">
-          {/* Mic icon */}
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-purple-100">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-12 w-12 text-purple-600"
-            >
-              <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
-              <path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.93V21h-2a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-3.07A7 7 0 0 0 19 11Z" />
-            </svg>
-          </div>
-
-          <h2 className="text-2xl font-extrabold text-purple-700">
-            Practice saying sounds!
-          </h2>
-          <p className="text-base text-gray-600">
-            Want to use the microphone to practice saying letter sounds out loud?
-          </p>
-
-          <div className="flex w-full flex-col gap-3">
-            <button
-              type="button"
-              onClick={handleMicAllow}
-              className="rounded-xl bg-purple-600 px-6 py-3 text-lg font-bold text-white shadow-md transition-all hover:bg-purple-700 active:scale-95"
-            >
-              Yes, let&apos;s go!
-            </button>
-            <button
-              type="button"
-              onClick={handleMicSkip}
-              className="rounded-xl bg-gray-100 px-6 py-3 text-base font-semibold text-gray-500 transition-all hover:bg-gray-200 active:scale-95"
-            >
-              No thanks, I&apos;ll tap instead
-            </button>
-          </div>
-        </div>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#FFF8E1] via-white to-[#E8F5E9]">
+        <p className="text-xl font-bold text-purple-600 animate-pulse">Getting ready...</p>
       </div>
     );
   }

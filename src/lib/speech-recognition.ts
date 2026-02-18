@@ -1,55 +1,54 @@
 /**
- * Browser-agnostic wrapper around the Web Speech API SpeechRecognition.
- * Handles feature detection, mic permission, and single-shot listening.
+ * Speech recognition via MediaRecorder + OpenAI Whisper.
+ *
+ * Records audio for a given duration, sends the clip to /api/transcribe,
+ * and returns the transcript. Much more reliable than the Web Speech API.
  */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* ---------- Types ---------- */
 
 export interface SpeechResult {
   /** All alternative transcripts, lowercased and trimmed */
   transcripts: string[];
-  /** Highest confidence score from the results */
+  /** Highest confidence score from the results (1.0 for Whisper) */
   confidence: number;
 }
 
 export interface ListenOptions {
   /** Max listening time in ms (default 4000) */
   timeoutMs?: number;
-  /** BCP-47 language (default "en-US") */
+  /** BCP-47 language (default "en-US") — unused by Whisper but kept for API compat */
   lang?: string;
-  /** Number of alternative transcripts to request (default 10) */
+  /** Unused — kept for API compat */
   maxAlternatives?: number;
 }
 
 /* ---------- Feature detection ---------- */
 
-/** Returns the SpeechRecognition constructor or null. */
-function getSRClass(): (new () => any) | null {
-  if (typeof window === "undefined") return null;
-  const w = window as any;
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
 export function isSpeechRecognitionSupported(): boolean {
-  return getSRClass() !== null;
+  if (typeof window === "undefined") return false;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  return !!(navigator.mediaDevices?.getUserMedia) && typeof MediaRecorder !== "undefined";
 }
 
 /* ---------- Mic permission ---------- */
 
 let _permissionGranted: boolean | null = null;
+let _micStream: MediaStream | null = null;
 
 export async function requestMicPermission(): Promise<boolean> {
-  if (_permissionGranted !== null) return _permissionGranted;
   try {
+    console.log("[WordPets] Requesting mic...");
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((t) => t.stop());
+    // Keep the stream alive so subsequent recordings start instantly
+    _micStream = stream;
     _permissionGranted = true;
-  } catch {
+    console.log("[WordPets] Mic granted");
+  } catch (err) {
     _permissionGranted = false;
+    console.error("[WordPets] Mic denied:", err);
   }
-  return _permissionGranted;
+  return _permissionGranted ?? false;
 }
 
 export function isPermissionGranted(): boolean {
@@ -58,99 +57,141 @@ export function isPermissionGranted(): boolean {
 
 /* ---------- Single-shot listener ---------- */
 
-let _activeRecognition: any = null;
+let _activeRecorder: MediaRecorder | null = null;
+let _cancelFlag = false;
 
 /**
- * Listen for a single utterance and return all transcript alternatives.
- * Resolves when the user stops speaking or the timeout fires.
+ * Record audio for `timeoutMs` then send to Whisper for transcription.
  */
-export function listenForSpeech(
+export async function listenForSpeech(
   options: ListenOptions = {},
 ): Promise<SpeechResult> {
-  const {
-    timeoutMs = 4000,
-    lang = "en-US",
-    maxAlternatives = 10,
-  } = options;
-
-  const SRClass = getSRClass();
-  if (!SRClass) {
-    return Promise.resolve({ transcripts: [], confidence: 0 });
-  }
+  const { timeoutMs = 4000 } = options;
+  const empty: SpeechResult = { transcripts: [], confidence: 0 };
 
   cancelListening();
+  _cancelFlag = false;
 
-  const recognition = new SRClass();
-  _activeRecognition = recognition;
+  // Get or reuse mic stream
+  let stream = _micStream;
+  if (!stream || !stream.active) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      _micStream = stream;
+    } catch {
+      console.error("[WordPets] Failed to get mic stream");
+      return empty;
+    }
+  }
 
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = maxAlternatives;
-  recognition.lang = lang;
+  // Determine best supported MIME type
+  const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+    ? "audio/webm;codecs=opus"
+    : MediaRecorder.isTypeSupported("audio/webm")
+      ? "audio/webm"
+      : MediaRecorder.isTypeSupported("audio/mp4")
+        ? "audio/mp4"
+        : "";
+
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+  _activeRecorder = recorder;
+
+  const chunks: Blob[] = [];
 
   return new Promise<SpeechResult>((resolve) => {
     let settled = false;
     const settle = (result: SpeechResult) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
-      _activeRecognition = null;
+      _activeRecorder = null;
       resolve(result);
     };
 
-    const timer = setTimeout(() => {
-      try { recognition.abort(); } catch { /* ignore */ }
-      settle({ transcripts: [], confidence: 0 });
-    }, timeoutMs + 1000);
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
 
-    recognition.onresult = (event: any) => {
-      const transcripts: string[] = [];
-      let bestConfidence = 0;
+    recorder.onstop = async () => {
+      if (_cancelFlag || settled) {
+        settle(empty);
+        return;
+      }
 
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        for (let j = 0; j < result.length; j++) {
-          const alt = result[j];
-          const t = (alt.transcript as string).toLowerCase().trim();
-          if (t) transcripts.push(t);
-          if (alt.confidence > bestConfidence) bestConfidence = alt.confidence;
+      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+      console.log("[WordPets] Recorded", blob.size, "bytes, sending to Whisper...");
+
+      // Skip tiny recordings (likely silence)
+      if (blob.size < 1000) {
+        console.log("[WordPets] Recording too small, skipping");
+        settle(empty);
+        return;
+      }
+
+      try {
+        const form = new FormData();
+        form.append("audio", blob, "audio.webm");
+
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          body: form,
+        });
+
+        if (!res.ok) {
+          console.error("[WordPets] Transcribe failed:", res.status);
+          settle(empty);
+          return;
         }
+
+        const data = await res.json();
+        const text = (data.text ?? "").toLowerCase().trim();
+        console.log("[WordPets] Whisper heard:", text);
+
+        if (text) {
+          // Split into individual words as "alternatives"
+          const words = text.split(/\s+/).filter(Boolean);
+          settle({
+            transcripts: [text, ...words],
+            confidence: 1.0,
+          });
+        } else {
+          settle(empty);
+        }
+      } catch (err) {
+        console.error("[WordPets] Transcribe error:", err);
+        settle(empty);
       }
-
-      settle({ transcripts, confidence: bestConfidence });
     };
 
-    recognition.onnomatch = () => {
-      settle({ transcripts: [], confidence: 0 });
+    recorder.onerror = () => {
+      console.error("[WordPets] MediaRecorder error");
+      settle(empty);
     };
 
-    recognition.onerror = (event: any) => {
-      settle({ transcripts: [], confidence: 0 });
-      if (event.error === "not-allowed") {
-        _permissionGranted = false;
-      }
-    };
-
-    recognition.onend = () => {
-      settle({ transcripts: [], confidence: 0 });
-    };
-
-    setTimeout(() => {
-      try { recognition.stop(); } catch { /* ignore */ }
-    }, timeoutMs);
-
+    // Start recording
     try {
-      recognition.start();
-    } catch {
-      settle({ transcripts: [], confidence: 0 });
+      recorder.start();
+      console.log("[WordPets] Recording started,", timeoutMs, "ms");
+    } catch (err) {
+      console.error("[WordPets] Recorder start failed:", err);
+      settle(empty);
+      return;
     }
+
+    // Stop after timeout
+    setTimeout(() => {
+      if (recorder.state === "recording") {
+        console.log("[WordPets] Recording timeout, stopping...");
+        recorder.stop();
+      }
+    }, timeoutMs);
   });
 }
 
-/** Abort any in-progress recognition. Safe to call anytime. */
+/** Cancel any in-progress recording. Safe to call anytime. */
 export function cancelListening(): void {
-  if (_activeRecognition) {
-    try { _activeRecognition.abort(); } catch { /* ignore */ }
-    _activeRecognition = null;
+  _cancelFlag = true;
+  if (_activeRecorder && _activeRecorder.state === "recording") {
+    try { _activeRecorder.stop(); } catch { /* ignore */ }
   }
+  _activeRecorder = null;
 }
