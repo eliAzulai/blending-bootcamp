@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { speakPhoneme, speakWord } from "@/lib/speech";
+import { speakPhoneme, speakWord, cancelSpeech } from "@/lib/speech";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import PhonemeCard, { type PhonemeState } from "./PhonemeCard";
 
@@ -26,10 +26,12 @@ function pick(arr: string[]) {
 
 type TapStage = "tapping" | "blending" | "reveal" | "done";
 type SpeechStage =
+  | "phoneme-play"
   | "phoneme-listen"
   | "phoneme-correct"
   | "phoneme-skip"
   | "blending"
+  | "word-play"
   | "word-listen"
   | "word-correct"
   | "word-skip"
@@ -58,7 +60,7 @@ export default function BlendingExercise({
     () => phonemes.map(() => "idle") as PhonemeState[],
   );
   const [nextIndex, setNextIndex] = useState(0);
-  const [stage, setStage] = useState<Stage>(useSpeech ? "phoneme-listen" : "tapping");
+  const [stage, setStage] = useState<Stage>(useSpeech ? "phoneme-play" : "tapping");
   const [message, setMessage] = useState("");
   const [messageKey, setMessageKey] = useState(0); // force re-animate message
 
@@ -85,7 +87,7 @@ export default function BlendingExercise({
   useEffect(() => {
     setStates(phonemes.map(() => "idle"));
     setNextIndex(0);
-    setStage(useSpeech ? "phoneme-listen" : "tapping");
+    setStage(useSpeech ? "phoneme-play" : "tapping");
     setMessage("");
     phonemeAttempts.current = 0;
     wordAttempts.current = 0;
@@ -96,11 +98,35 @@ export default function BlendingExercise({
    * SPEECH MODE
    * ===================================================== */
 
+  // --- Phoneme play: TTS says the sound, then move to listen
+  useEffect(() => {
+    if (stage !== "phoneme-play") return;
+    let cancelled = false;
+
+    showMessage("Listen...");
+    setStates((prev) => {
+      const next = [...prev];
+      next[nextIndex] = "active";
+      return next;
+    });
+
+    (async () => {
+      await speakPhoneme(phonemes[nextIndex]);
+      if (cancelled || !mountedRef.current) return;
+      await new Promise((r) => setTimeout(r, 200));
+      if (cancelled || !mountedRef.current) return;
+      setStage("phoneme-listen");
+    })();
+
+    return () => { cancelled = true; };
+  }, [stage, nextIndex, phonemes]);
+
   // --- Phoneme listen
   useEffect(() => {
     if (stage !== "phoneme-listen") return;
     let cancelled = false;
 
+    cancelSpeech();
     showMessage(`Say "${phonemes[nextIndex]}"`);
     setStates((prev) => {
       const next = [...prev];
@@ -176,11 +202,30 @@ export default function BlendingExercise({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
+  // --- Word play: TTS says the word, then move to listen
+  useEffect(() => {
+    if (stage !== "word-play") return;
+    let cancelled = false;
+
+    showMessage("Listen...");
+
+    (async () => {
+      await speakWord(word);
+      if (cancelled || !mountedRef.current) return;
+      await new Promise((r) => setTimeout(r, 200));
+      if (cancelled || !mountedRef.current) return;
+      setStage("word-listen");
+    })();
+
+    return () => { cancelled = true; };
+  }, [stage, word]);
+
   // --- Word listen (auto-start)
   useEffect(() => {
     if (stage !== "word-listen") return;
     let cancelled = false;
 
+    cancelSpeech();
     showMessage(`Say "${word}"`);
 
     (async () => {
@@ -261,12 +306,12 @@ export default function BlendingExercise({
 
         setTimeout(() => {
           if (!mountedRef.current) return;
-          setStage("word-listen");
+          setStage("word-play");
         }, 600);
       }, 200);
     } else {
       setNextIndex(next);
-      setStage("phoneme-listen");
+      setStage("phoneme-play");
     }
   }
 
@@ -330,6 +375,7 @@ export default function BlendingExercise({
   // Card gap narrows when blending/word phase
   const isBlendedPhase =
     stage === "blending" ||
+    stage === "word-play" ||
     stage === "word-listen" ||
     stage === "word-correct" ||
     stage === "word-skip" ||
@@ -387,8 +433,8 @@ export default function BlendingExercise({
         </p>
       )}
 
-      {/* Word phase — listening */}
-      {(stage === "word-listen" || stage === "word-skip") && (
+      {/* Word phase */}
+      {(stage === "word-play" || stage === "word-listen" || stage === "word-skip") && (
         <span className="text-6xl font-extrabold text-purple-700 animate-word-pop">
           {word}
         </span>
