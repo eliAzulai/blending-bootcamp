@@ -7,68 +7,84 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` — dev server on port 3000
 - `npm run build` — production build (validates all routes)
 - `npm run lint` — ESLint
+- `npm run pull-secrets` — pull env vars from Infisical into `.env.local`
 - No test framework configured yet
 
 ## What This Is
 
-WordPets (branded from "Blending Bootcamp") — a phonics blending app for kids ages 5-7. 14-day program, ~10 min/day. The child taps phoneme cards, listens to sounds, then says the word aloud. Speech recognition confirms pronunciation.
+WordPets — a companion practice app for English literacy students ages 6-12. Teachers assign it to students for daily practice between live sessions. Kids complete reading, spelling, and writing activities to earn rewards for a virtual pet.
+
+**Current state:** MVP of the original "Blending Bootcamp" concept — a 14-day phonics blending program for ages 5-7. This is being evolved into the broader companion app described in `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`.
+
+**Target users:** English-speaking children living in Israel who speak/understand English fluently but struggle with reading and writing. Their teacher (Eli's wife) assigns practice via the app.
 
 ## Architecture
 
-### Core Lesson Flow
+### Current Lesson Flow (MVP — being reworked)
 
-The lesson experience is a pipeline of components:
-
-1. **Home page** (`src/app/page.tsx`) — 14-day vertical timeline, reads progress from localStorage, shows locked/current/completed states per day
-2. **Lesson route** (`src/app/lesson/[day]/page.tsx`) — SSG with `generateStaticParams` for days 1-14, server component that loads lesson data and renders `LessonClient`
-3. **LessonScreen** (`src/components/LessonScreen.tsx`) — wraps the full lesson session. Requests mic permission on mount, iterates through words, tracks elapsed time, marks day complete on finish
-4. **BlendingExercise** (`src/components/BlendingExercise.tsx`) — the core mechanic. Has two modes:
-   - **Speech mode** (mic granted): phoneme-play -> phoneme-listen -> phoneme-correct/skip -> blending -> word-play -> word-listen -> word-correct/skip -> done
-   - **Tap mode** (fallback): tapping -> blending -> reveal -> done (manual "I can say it!" confirm)
+1. **Home page** (`src/app/page.tsx`) — 14-day vertical timeline, progress from localStorage
+2. **Lesson route** (`src/app/lesson/[day]/page.tsx`) — SSG with `generateStaticParams` for days 1-14
+3. **LessonScreen** (`src/components/LessonScreen.tsx`) — wraps lesson session, requests mic, tracks time
+4. **BlendingExercise** (`src/components/BlendingExercise.tsx`) — core mechanic with two modes:
+   - **Speech mode** (mic granted): phoneme-play → phoneme-listen → phoneme-correct/skip → blending → word-play → word-listen → word-correct/skip → done
+   - **Tap mode** (fallback): tapping → blending → reveal → done
 5. **CelebrationScreen** (`src/components/CelebrationScreen.tsx`) — shown on lesson completion
 
-### Speech Recognition Pipeline
+### Speech Pipeline
 
-Speech input uses MediaRecorder + OpenAI Whisper (not the Web Speech API):
+Speech input uses MediaRecorder + OpenAI Whisper (not Web Speech API):
+- `src/lib/speech-recognition.ts` — records audio via MediaRecorder, sends to `/api/transcribe`
+- `src/app/api/transcribe/route.ts` — proxies to Whisper, requires `OPENAI_API_KEY`
+- `src/hooks/useSpeechRecognition.ts` — React hook for recording/matching
+- `src/lib/phoneme-matching.ts` — fuzzy matching with child speech substitution patterns (th→f, r→w). Very lenient for phonemes (any sound passes), stricter for words.
 
-- `src/lib/speech-recognition.ts` — records audio for N seconds via MediaRecorder, sends blob to `/api/transcribe`
-- `src/app/api/transcribe/route.ts` — proxies audio to OpenAI Whisper API, requires `OPENAI_API_KEY` env var
-- `src/hooks/useSpeechRecognition.ts` — React hook wrapping the recording/matching flow
-- `src/lib/phoneme-matching.ts` — fuzzy matching with accept maps, child speech substitution patterns (th->f, r->w), and Levenshtein distance. Very lenient for phonemes (always passes if child makes any sound), stricter for whole words
+Speech output (TTS) uses browser Web Speech API:
+- `src/lib/speech.ts` — maps phonemes to pronunciation strings (e.g. "c" → "kuh")
 
-Speech output (TTS) uses the browser's Web Speech API:
-- `src/lib/speech.ts` — maps single-letter phonemes to pronunciation strings (e.g., "c" -> "kuh") because TTS reads letter names, not sounds
+### Data
 
-### Data Model
+- `src/types/lesson.ts` — discriminated union: Phase1Lesson | Phase2Lesson | Phase3Lesson
+- `src/data/curriculum.ts` — 14 lessons, 3 phases, ~5 words/day with phoneme splits. This will become one content source in the broader starter library.
 
-- `src/types/lesson.ts` — discriminated union: Phase1Lesson | Phase2Lesson | Phase3Lesson. Phase 3 adds `decodableText`
-- `src/data/curriculum.ts` — hardcoded 14 lessons across 3 phases (Sound Glue, Automatic Blending, Transfer to Reading), ~5 words per day, each word split into phonemes
+### Progress (Dual Layer)
 
-### Progress Tracking (Dual Layer)
-
-- **localStorage** (`src/lib/progress.ts`) — always works, stores `{daysCompleted: number[], wordsBlended: number}`. Sequential unlock: day N requires day N-1 complete
-- **Supabase** (`src/lib/supabase/progress-sync.ts`) — optional cloud sync when authenticated. Tables: `learners` (parent_id FK to auth.users), `progress` (learner_id, day, words_blended, time_seconds). RLS policies scope all queries to parent's own learners
+- **localStorage** (`src/lib/progress.ts`) — stores `{daysCompleted, wordsBlended}`, sequential unlock
+- **Supabase** (`src/lib/supabase/progress-sync.ts`) — optional cloud sync. Tables: `learners`, `progress` with RLS scoped to parent
 
 ### Auth
 
-- Supabase Auth via `@supabase/ssr`, configured with browser client (`src/lib/supabase/client.ts`) and server client (`src/lib/supabase/server.ts`)
-- `AuthProvider` context wraps the app in layout, gracefully no-ops if Supabase env vars aren't set
-- Middleware (`src/middleware.ts`) refreshes sessions on every request
-- Login/signup pages at `/login` and `/signup`, OAuth callback at `/auth/callback`
+- Supabase Auth via `@supabase/ssr` with browser + server clients
+- `AuthProvider` context gracefully no-ops if Supabase env vars aren't set
+- Middleware refreshes sessions on every request
 
 ## Env Vars
 
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL (optional; app works without it using localStorage only)
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
-- `OPENAI_API_KEY` — server-side only, for Whisper transcription API
+- `OPENAI_API_KEY` — server-side only, Whisper transcription
+- `NEXT_PUBLIC_SUPABASE_URL` — optional, enables cloud sync
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — optional
 
 ## Brand
 
 - Name: **WordPets**
-- Colors: purple (#7C3AED primary), teal, coral/orange, cream backgrounds (#FFF8E1)
-- Logo at `public/wordpets/logo.png`
-- Target: mobile/tablet PWA (standalone mode, no user scaling)
+- Colors: purple #7C3AED (primary), teal, coral/orange, cream backgrounds #FFF8E1
+- Logo: `public/wordpets/logo.png`
+- Target device: iPad primary (768×1024), mobile secondary
+- Two visual modes planned: playful (ages 6-8) and clean (ages 9-12)
 
-## Pending Features
+## Design Spec
 
-Stripe paywall at Day 4, parent dashboard, service worker for offline, pet care reward screen, audiobook story player, letter tracing canvas, word-hunt game.
+The approved design for the companion app is at `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Key additions over current MVP:
+- Teacher dashboard with student management, tags, content assignment
+- Pet system (care, customization, room decoration, evolution)
+- 7 activity types (phonics, read aloud, spelling, sight words, comprehension, writing, story listening)
+- Pet mini-games as reward currency
+- AI-generated + curated content library
+- Invite-link onboarding for students
+- Auto-generated parent progress updates
+
+## Key Design Decisions
+
+1. **Activity components must be standalone** — each accepts content + mode (solo/live) + callbacks, for reuse in Phase 2 live sessions
+2. **Content is decoupled from delivery** — same format whether from library, AI, or teacher upload
+3. **Pet system is a separate module** — activities emit reward events, pet system consumes them
+4. **Two age-based visual modes** — determined by student profile age, same components with different styling
