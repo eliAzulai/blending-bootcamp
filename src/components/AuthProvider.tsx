@@ -3,17 +3,24 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient, supabaseIsConfigured } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import type { Profile, Role } from "@/types/database";
 
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
+  role: Role | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  profile: null,
+  role: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function useAuth() {
@@ -26,7 +33,23 @@ export default function AuthProvider({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  async function fetchProfile(userId: string) {
+    if (!supabaseIsConfigured()) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    setProfile(data as Profile | null);
+  }
+
+  async function refreshProfile() {
+    if (user) await fetchProfile(user.id);
+  }
 
   useEffect(() => {
     if (!supabaseIsConfigured()) {
@@ -36,19 +59,24 @@ export default function AuthProvider({
 
     const supabase = createClient();
 
-    // Get initial session
-    async function fetchUser() {
+    async function init() {
       const { data } = await supabase.auth.getUser();
       setUser(data.user);
+      if (data.user) await fetchProfile(data.user.id);
       setLoading(false);
     }
-    fetchUser();
+    init();
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const newUser = session?.user ?? null;
+      setUser(newUser);
+      if (newUser) {
+        await fetchProfile(newUser.id);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
     });
 
@@ -60,10 +88,20 @@ export default function AuthProvider({
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        role: profile?.role ?? null,
+        loading,
+        signOut,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
