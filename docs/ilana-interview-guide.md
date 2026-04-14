@@ -1,10 +1,10 @@
-# Wife Interview Guide — WordPets Product
+# Ilana Interview Guide — WordPets Product
 
 **Purpose:** Get real input from the domain expert and primary teacher user before building Plan 2 (activities and daily practice flow).
 
-**Format:** 30-45 min recorded conversation. Send questions 24-48 hours in advance so she can think about them. Use `/voice` or `/transcribe` to record + transcribe.
+**Format:** 30-45 min recorded conversation. Send questions 24-48 hours in advance so Ilana can think about them. Use `/voice` or `/transcribe` to record + transcribe.
 
-**Context to share with her first (just before the interview):**
+**Context to share with Ilana first (just before the interview):**
 
 > "I've been building a practice app called WordPets that would work alongside your teaching — your students do short daily practice between your sessions, earn rewards for a virtual pet, and you see who's practicing in a dashboard. Before I build the actual lesson content and activities, I want to make sure I'm building what you actually need. These questions are to help me understand your teaching, not to test you — there are no right answers. Feel free to say 'I don't know' or 'this question doesn't make sense.'"
 
@@ -78,7 +78,7 @@
 
 ## Part 5: Speech Recognition Test (5 min — optional but valuable)
 
-*If you can play her a sample of Whisper transcribing a 7-year-old reading:*
+*If you can play Ilana a sample of Whisper transcribing a 7-year-old reading:*
 
 24. **Listen to this — a kid reading a passage, and here's what the AI transcribed.** Would you trust this to tell a kid "correct" or "try again"?
 
@@ -86,7 +86,7 @@
 
 ---
 
-## Part 6: Her Questions (5-10 min)
+## Part 6: Ilana's Questions (5-10 min)
 
 26. **What questions do YOU have for me about this project?**
 
@@ -99,14 +99,14 @@
 ## After The Interview
 
 ### Transcribe
-Use `/transcribe` skill on the recording. Output goes into `docs/wife-interview-transcript-YYYY-MM-DD.md`.
+Use `/transcribe` skill on the recording. Output goes into `docs/ilana-interview-transcript-YYYY-MM-DD.md`.
 
 ### Extract insights
-Create `docs/wife-interview-insights.md` with:
+Create `docs/ilana-interview-insights.md` with:
 - **Surprises** (things that didn't match my assumptions)
 - **Corrections** (things I had wrong)
 - **Validations** (things I had right)
-- **New ideas** (things she suggested that I hadn't considered)
+- **New ideas** (things Ilana suggested that I hadn't considered)
 - **Red flags** (things that worry her or could go wrong)
 - **Pilot plan** (which specific students, how many, when to start)
 
@@ -114,11 +114,11 @@ Create `docs/wife-interview-insights.md` with:
 Apply the insights to `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Things likely to change:
 - Success metric (may be different from "60% practice 4+ days")
 - Which activities matter most (may not be phonics + spelling + read aloud)
-- Content sources (she may already have materials)
+- Content sources (Ilana may already have materials)
 - Teacher effort budget (may be more or less than 10 min/week)
 - Which students to pilot with
 
-### Decide: is she in or is this solo?
+### Decide: is Ilana in or is this solo?
 Be honest with yourself about her answer to "how much time are you willing to spend on this?" If it's "not much," either:
 - Build a version that needs zero teacher involvement
 - Delay until she has more bandwidth
@@ -129,7 +129,7 @@ Be honest with yourself about her answer to "how much time are you willing to sp
 ## Tips For The Conversation
 
 - **Record audio, not video.** Less self-conscious, better for natural conversation.
-- **Don't interrupt or defend the design.** Let her criticize. The whole point is to hear things you haven't considered.
+- **Don't interrupt or defend the design.** Let Ilana criticize. The whole point is to hear things you haven't considered.
 - **If she says something you disagree with, ask "tell me more" instead of pushing back.** Save disagreements for after the interview.
 - **Take notes AFTER the call, not during.** Be present in the conversation.
 - **Thank her and mean it.** She's saving you weeks of building the wrong thing.
