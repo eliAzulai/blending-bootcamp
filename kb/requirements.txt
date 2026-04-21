@@ -1,0 +1,6 @@
+PyMuPDF>=1.24,<2
+chromadb>=0.5,<1
+openai>=1.50,<2
+PyYAML>=6.0,<7
+pytest>=8.0,<9
+Pillow>=10.0,<12
