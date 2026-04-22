@@ -2,6 +2,8 @@
 
 import base64
 import io
+import re
+import time
 
 import fitz
 from PIL import Image
@@ -28,6 +30,11 @@ ACTIVITY_PROMPT = (
 )
 
 PROMPTS = {"curriculum": CURRICULUM_PROMPT, "activity": ACTIVITY_PROMPT}
+
+# Gentle proactive throttle. With detail="low" images are fixed at 85 tokens each,
+# so TPM is no longer the bottleneck — this small interval just smooths burst traffic.
+MIN_CALL_INTERVAL_SECONDS = 0.5
+_last_call_time = [0.0]  # list for mutable closure
 
 
 def prompt_for_domain(domain: str) -> str:
@@ -68,22 +75,62 @@ def count_pages(path: str) -> int:
         doc.close()
 
 
-def describe_image(client, png_bytes: bytes, prompt: str) -> str:
-    """Send a page image to the vision model and return the description."""
+def describe_image(client, png_bytes: bytes, prompt: str, max_retries: int = 10) -> str:
+    """Send a page image to the vision model and return the description.
+
+    Retries on 429 TPM limits. The error message suggests a retry window but
+    actual TPM reset can take a full minute, so we floor waits at 65s.
+    """
     b64 = base64.b64encode(png_bytes).decode("ascii")
     data_url = f"data:image/png;base64,{b64}"
-    response = client.chat.completions.create(
+    payload = dict(
         model=VISION_MODEL,
         messages=[
             {
                 "role": "user",
                 "content": [
                     {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": data_url}},
+                    {"type": "image_url", "image_url": {"url": data_url, "detail": "low"}},
                 ],
             }
         ],
         max_tokens=500,
         temperature=0.2,
     )
-    return response.choices[0].message.content.strip()
+    for attempt in range(max_retries):
+        _throttle()
+        try:
+            response = client.chat.completions.create(**payload)
+            _last_call_time[0] = time.time()
+            return response.choices[0].message.content.strip()
+        except Exception as exc:  # noqa: BLE001 — SDK error class varies
+            if "rate_limit" not in str(exc).lower() and "429" not in str(exc):
+                raise
+            wait = _retry_delay_from_error(str(exc), attempt)
+            print(f"    rate limited, sleeping {wait:.1f}s (attempt {attempt+1}/{max_retries})", flush=True)
+            time.sleep(wait)
+    raise RuntimeError(f"describe_image failed after {max_retries} retries")
+
+
+def _throttle() -> None:
+    """Enforce MIN_CALL_INTERVAL_SECONDS between calls (skipped if never called)."""
+    if not _last_call_time[0]:
+        return
+    elapsed = time.time() - _last_call_time[0]
+    if elapsed < MIN_CALL_INTERVAL_SECONDS:
+        time.sleep(MIN_CALL_INTERVAL_SECONDS - elapsed)
+
+
+def _retry_delay_from_error(msg: str, attempt: int) -> float:
+    """Parse 'try again in 1.23s' / '258ms' hints from the error.
+
+    Floor at 65s because the suggested retry time often just moves us into the
+    next TPM window where we immediately hit the limit again; waiting a full
+    minute lets the per-minute counter reset cleanly.
+    """
+    m = re.search(r"try again in ([\d.]+)(ms|s)", msg)
+    if m:
+        val = float(m.group(1))
+        seconds = val / 1000 if m.group(2) == "ms" else val
+        return max(seconds + 0.5, 65.0)
+    return min(120.0, 2 ** attempt)
