@@ -59,6 +59,8 @@ Speech output (TTS) uses browser Web Speech API:
 
 ## Env Vars
 
+**The one correct path**: `npm run pull-secrets` populates `.env.local` from Infisical project `2423b7fc` (legacy name: "blending-bootcamp" — kept under old name intentionally). Don't `export` vars or hand-edit `.env.local`; Infisical is the source of truth. Keys below document what's stored there.
+
 - `OPENAI_API_KEY` — server-side only, Whisper transcription
 - `NEXT_PUBLIC_SUPABASE_URL` — optional, enables cloud sync
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — optional
@@ -88,3 +90,15 @@ The approved design for the companion app is at `docs/superpowers/specs/2026-04-
 2. **Content is decoupled from delivery** — same format whether from library, AI, or teacher upload
 3. **Pet system is a separate module** — activities emit reward events, pet system consumes them
 4. **Two age-based visual modes** — determined by student profile age, same components with different styling
+
+## Teaching Resources KB (`kb/`)
+
+Queryable knowledge base of Ilana's curated teaching materials. See `kb/README.md`.
+
+- 26 source PDFs/images in `kb/sources/`
+- Two ChromaDB collections: `wordpets-curriculum`, `wordpets-activities`
+- Run `PYTHONPATH=. python3 -m kb.scripts.extract` (incremental) → `PYTHONPATH=. python3 -m kb.scripts.index`
+- Query via `PYTHONPATH=. python3 -m kb.scripts.query <curriculum|activities> "question" [--grade K|1|2|3+]`
+- Or via skills: `/curriculum-lookup`, `/activity-ideas`
+- Setup: `cd kb && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
+- Needs `OPENAI_API_KEY` (already in Infisical project `blending-bootcamp`, pulled by `npm run pull-secrets`)
