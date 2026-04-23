@@ -8,19 +8,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — production build (validates all routes)
 - `npm run lint` — ESLint
 - `npm run pull-secrets` — pull env vars from Infisical into `.env.local`
-- No test framework configured yet
+- No JS/TS test framework yet
+- `PYTHONPATH=. pytest kb/tests/ -q` — Python tests for the teaching-resources KB (21 tests). Must run from repo root (`~/projects/wordpets`) with the kb venv active.
 
 ## What This Is
 
-WordPets — a companion practice app for English literacy students ages 6-12. Teachers assign it to students for daily practice between live sessions. Kids complete reading, spelling, and writing activities to earn rewards for a virtual pet.
+WordPets — a companion practice app assigned by a teacher (Eli's wife, Ilana) to her students for daily practice between live sessions. Kids complete phonics, spelling, and read-aloud activities to earn rewards for a virtual pet. Teacher sees who practiced and what they're struggling with.
 
-**Current state:** MVP of the original "Blending Bootcamp" concept — a 14-day phonics blending program for ages 5-7. This is being evolved into the broader companion app described in `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`.
+**Target users (Phase 1a):** English-speaking children living in Israel ages 6-8. They speak/understand English fluently but struggle with reading and writing.
 
-**Target users:** English-speaking children living in Israel who speak/understand English fluently but struggle with reading and writing. Their teacher (Eli's wife) assigns practice via the app.
+## Status (as of 2026-04-22)
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **Phase 0 — Blending Bootcamp MVP** | 14-day phonics blending program, ages 5-7, self-service | **SHELVED as starting point.** Code preserved (see "Phase 0 codebase" below). Do NOT actively iterate. Treat as a working reference for the speech/blending mechanic that gets reused inside Phase 1a. |
+| **Phase 1a — Companion App MVP** | Teacher-assigned practice for wife's students (ages 6-8). 3 activities (Phonics, Spelling, Read Aloud), thin pet system, minimal teacher dashboard. | **ACTIVE.** Authoritative spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Skeleton scaffolded in `src/app/teacher/`, `src/app/join/`, `src/app/signup/`, `src/components/teacher/`. |
+| **Phase 1b — Earn Expansion** | More activities, pet room/outfits/evolution, ages 9-12, parent summaries | Deferred — only if 1a validates (≥60% of wife's students practice 4+ days/week after 4 weeks). |
+| **Phase 2+** | Live teaching platform, teacher SaaS, standalone B2C | Out of scope for this codebase right now. |
+
+**Decision log:** The pivot from Phase 0 → Phase 1a was made on 2026-04-14 (resolved in the design spec) and formally documented on 2026-04-22. Phase 0 is kept because (a) its speech pipeline + phoneme matching is the foundation Phase 1a builds on, and (b) it's the historical proof that the core mechanic works.
 
 ## Architecture
 
-### Current Lesson Flow (MVP — being reworked)
+### Phase 0 codebase (frozen — reference only)
+
+The original Blending Bootcamp MVP. Don't add features here; reuse pieces inside Phase 1a activities.
 
 1. **Home page** (`src/app/page.tsx`) — 14-day vertical timeline, progress from localStorage
 2. **Lesson route** (`src/app/lesson/[day]/page.tsx`) — SSG with `generateStaticParams` for days 1-14
@@ -29,6 +41,14 @@ WordPets — a companion practice app for English literacy students ages 6-12. T
    - **Speech mode** (mic granted): phoneme-play → phoneme-listen → phoneme-correct/skip → blending → word-play → word-listen → word-correct/skip → done
    - **Tap mode** (fallback): tapping → blending → reveal → done
 5. **CelebrationScreen** (`src/components/CelebrationScreen.tsx`) — shown on lesson completion
+
+### Phase 1a scaffolding (in progress)
+
+- `src/app/teacher/` — teacher dashboard routes
+- `src/app/signup/`, `src/app/login/`, `src/app/auth/` — account flow (teachers + parents)
+- `src/app/join/` — invite-link onboarding for students
+- `src/components/teacher/` — dashboard components
+- Activity components for Phonics / Spelling / Read Aloud are TBD; Phonics will wrap the existing `BlendingExercise` mechanic with the new content + reward shape.
 
 ### Speech Pipeline
 
@@ -61,7 +81,7 @@ Speech output (TTS) uses browser Web Speech API:
 
 **The one correct path**: `npm run pull-secrets` populates `.env.local` from Infisical project `2423b7fc` (legacy name: "blending-bootcamp" — kept under old name intentionally). Don't `export` vars or hand-edit `.env.local`; Infisical is the source of truth. Keys below document what's stored there.
 
-- `OPENAI_API_KEY` — server-side only, Whisper transcription
+- `OPENAI_API_KEY` — server-side only, Whisper transcription (⚠️ as of 2026-04-23 the key in the `blending-bootcamp` Infisical project is out of credits; KB extraction was run against the `voice` project's key. Top up or rotate before relying on production Whisper.)
 - `NEXT_PUBLIC_SUPABASE_URL` — optional, enables cloud sync
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — optional
 
@@ -75,30 +95,45 @@ Speech output (TTS) uses browser Web Speech API:
 
 ## Design Spec
 
-The approved design for the companion app is at `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Key additions over current MVP:
-- Teacher dashboard with student management, tags, content assignment
-- Pet system (care, customization, room decoration, evolution)
-- 7 activity types (phonics, read aloud, spelling, sight words, comprehension, writing, story listening)
-- Pet mini-games as reward currency
-- AI-generated + curated content library
-- Invite-link onboarding for students
-- Auto-generated parent progress updates
+Authoritative spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Read it before doing Phase 1a work. Key Phase 1a scope (read this carefully — it deliberately CUTS scope vs. earlier mockups):
+
+**In Phase 1a:**
+- Teacher dashboard: student list, tags, focus areas (Phonics/Spelling/Read Aloud), difficulty, invite links
+- 3 activity types only: Phonics blending, Spelling, Read Aloud
+- Read Aloud is **non-authoritative** — Whisper records but does NOT score (until validated with real kids)
+- Thin pet system: pick + name pet, mood reflects practice, fed with coins. Front-and-center, "feels alive."
+- One visual mode (ages 6-8): cream background, big buttons, emoji
+- Manual starter content library only (no AI generation, no teacher uploads)
+- Invite-link onboarding for parents → students
+
+**Deferred to Phase 1b (do NOT build now):**
+- Pet room, outfits, evolution, mini-games, multiple pets
+- Comprehension, Writing, Story listening, Sight words as separate activities
+- AI content generation, teacher content uploads
+- Parent progress summary emails
+- Ages 9-12 visual mode
+
+## Success Metric (Phase 1a)
+
+After 4 weeks with wife's students: **≥60% complete practice 4+ days/week** (measured via practice_sessions table). If this fails, rework pet mechanics or content before adding more features.
 
 ## Key Design Decisions
 
-1. **Activity components must be standalone** — each accepts content + mode (solo/live) + callbacks, for reuse in Phase 2 live sessions
-2. **Content is decoupled from delivery** — same format whether from library, AI, or teacher upload
+1. **Activity components must be standalone** — each accepts content + mode (solo/live) + callbacks, so they can be reused in Phase 2 live sessions later
+2. **Content is decoupled from delivery** — same format whether from starter library, AI, or teacher upload (only starter library exists in 1a)
 3. **Pet system is a separate module** — activities emit reward events, pet system consumes them
-4. **Two age-based visual modes** — determined by student profile age, same components with different styling
+4. **Speech is non-authoritative for Read Aloud** — Whisper has not been validated with 6-8 year olds reading aloud; record + transcribe but do not pass/fail. Phonics blending speech (Phase 0 codebase) keeps its existing fuzzy matching
 
 ## Teaching Resources KB (`kb/`)
 
 Queryable knowledge base of Ilana's curated teaching materials. See `kb/README.md`.
 
-- 26 source PDFs/images in `kb/sources/`
-- Two ChromaDB collections: `wordpets-curriculum`, `wordpets-activities`
-- Run `PYTHONPATH=. python3 -m kb.scripts.extract` (incremental) → `PYTHONPATH=. python3 -m kb.scripts.index`
-- Query via `PYTHONPATH=. python3 -m kb.scripts.query <curriculum|activities> "question" [--grade K|1|2|3+]`
-- Or via skills: `/curriculum-lookup`, `/activity-ideas`
-- Setup: `cd kb && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
-- Needs `OPENAI_API_KEY` (already in Infisical project `blending-bootcamp`, pulled by `npm run pull-secrets`)
+- 26 source PDFs/images in `kb/sources/` → 28 extracted markdown files (2 sources are classified `domain: both` and extracted into both collections) → 63 embedded chunks (33 curriculum + 30 activities)
+- Three ChromaDB collections: `wordpets-curriculum`, `wordpets-activities`, `wordpets-principles`. Persistent store at `~/.wordpets-kb-db`, extract/index state at `kb/.extract-state.json` and `~/.wordpets-kb-state.sqlite`
+- Principles layer: 10 pedagogical design principles extracted from Ilana's expert walkthrough sessions in `kb/extracted/principles/`. Transcripts in `kb/transcripts/`.
+- Run `PYTHONPATH=. python3 -m kb.scripts.extract` (incremental via sha256) → `PYTHONPATH=. python3 -m kb.scripts.index` (incremental via content hash, `--full-reindex` to rebuild)
+- Query via `PYTHONPATH=. python3 -m kb.scripts.query <curriculum|activities|principles> "question" [--grade K|1|2|3+] [--top N]`
+- Skills: `/curriculum-lookup` (what content), `/activity-ideas` (what activities), `/teaching-principles` (how/why to teach)
+- Setup: Python 3.10+, then `cd kb && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`. All `kb.scripts.*` modules must be invoked from the repo root with `PYTHONPATH=.`.
+- Vision extraction uses `gpt-4o-mini` with `detail: "low"` (fixed 85 tokens/image) plus a 0.5s proactive throttle and 65s TPM-aware retry floor in `kb/scripts/extract_vision.py` — if you change these, expect 200k TPM rate-limits on bulk runs.
+- Needs `OPENAI_API_KEY`. Infisical's `blending-bootcamp` project key is currently out of credits; see Env Vars section above.
