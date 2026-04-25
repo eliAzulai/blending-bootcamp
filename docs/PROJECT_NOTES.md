@@ -2,6 +2,8 @@
 
 Extracted from all project docs, mockups, code, git history, and ChatGPT planning chats as of 2026-04-14.
 
+> **2026-04-22 update:** This doc captured the *uncertainty* that existed before the design spec. The "Open Decisions" section below is now **resolved** — see the resolution block at the bottom and read `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md` (authoritative). The Blending Bootcamp MVP was **shelved as Phase 0** (kept as starting point / reference), and Phase 1a Companion App is now the active target. See `../CLAUDE.md` Status section for the canonical phase table.
+
 ---
 
 ## The People
@@ -164,7 +166,17 @@ The app (Track 1) was positioned as a product that can scale without wife's time
 
 ---
 
-## Open Decisions
+## Open Decisions — RESOLVED 2026-04-14 / formalized 2026-04-22
+
+The five open decisions below were resolved by the 2026-04-14 design spec and Codex courtroom deliberation. Resolution summary:
+
+1. **Which product?** → **(C) Both, but sequenced.** Phase 1a is a companion app for wife's existing live students (NOT standalone, NOT global B2C). Live teaching continues in parallel. Standalone B2C is Phase 2+ and out of scope right now.
+2. **Real customer?** → Wife's niche: kids ages 6-8 who speak English but can't read/write. NOT the broader "any kid who can't blend" market.
+3. **Curriculum?** → Phase 1a uses a curated **starter library** organized by difficulty (CVC/CCVC/CVCC/digraphs phonics + Dolch sight words + 10-15 read-aloud passages). Existing `curriculum.ts` is reused as one input. The 26-letter mockup and "ongoing fluency program" are NOT this phase.
+4. **Wife's involvement?** → She is the teacher of record, focus-area designer, and validation channel. Her real students are the test cohort.
+5. **User testing?** → None yet. Phase 1a treats Read Aloud Whisper as **non-authoritative** (records but doesn't grade) until validated with real 6-8 year olds. Phonics blending speech keeps the existing fuzzy matching from Phase 0.
+
+**Original Open Decisions (preserved for history):**
 
 ### 1. Which product are you building?
 - (A) The 14-day blending app (current code) — global, self-service, ages 5-7
@@ -202,7 +214,7 @@ The app (Track 1) was positioned as a product that can scale without wife's time
 | `write me a prompt for researching a new webapp...` | Market research — competitive analysis, AI features, pedagogy, UX guidelines, feature roadmap | 834KB |
 | `you are a an expert business ideas researcher...` | Wedge analysis, MVP definition, blending bootcamp spec, Shark Tank critique | ~40KB |
 
-### Project Assets (~/projects/blending-bootcamp/)
+### Project Assets (~/projects/wordpets/)
 | File | Status |
 |------|--------|
 | `CLAUDE.md` | Current — architecture reference |
@@ -213,5 +225,5 @@ The app (Track 1) was positioned as a product that can scale without wife's time
 | `public/wordpets/dashboard-mockup.png` | Parent dashboard concept (26-letter model — doesn't match code) |
 | `public/wordpets/lesson-loop.png` | 4-node lesson loop diagram |
 
-### Codebase (~/projects/blending-bootcamp/src/)
+### Codebase (~/projects/wordpets/src/)
 29 TypeScript files, ~3,200 lines. Well-organized. Only implements Track 1 (blending app).

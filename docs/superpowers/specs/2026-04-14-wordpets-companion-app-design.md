@@ -3,7 +3,7 @@
 **Date:** 2026-04-14
 **Revised:** 2026-04-14 (post courtroom deliberation — scope cut approved by Codex GPT-5.4)
 **Status:** Approved
-**Project:** ~/projects/blending-bootcamp
+**Project:** ~/projects/wordpets
 
 ---
 
