@@ -11,6 +11,7 @@ GRADES = ["K", "1", "2", "3+"]
 COLLECTIONS = {
     "curriculum": "wordpets-curriculum",
     "activities": "wordpets-activities",
+    "principles": "wordpets-principles",
 }
 
 # Paths

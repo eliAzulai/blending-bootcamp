@@ -30,7 +30,7 @@ from kb.scripts.constants import (
 
 
 # Map on-disk directory name → domain key → ChromaDB collection name
-DIR_TO_DOMAIN = {"curriculum": "curriculum", "activities": "activities"}
+DIR_TO_DOMAIN = {"curriculum": "curriculum", "activities": "activities", "principles": "principles"}
 
 
 def file_hash(text: str) -> str:
@@ -146,10 +146,16 @@ def main():
         raise SystemExit("OPENAI_API_KEY not set")
 
     client = chromadb.PersistentClient(path=DB_PATH)
-    ef = embedding_functions.OpenAIEmbeddingFunction(
-        api_key=api_key,
-        model_name=EMBEDDING_MODEL,
-    )
+    # ChromaDB's built-in OpenAI EF uses a short default timeout; override via openai client
+    import openai as _openai
+    _oai_client = _openai.OpenAI(api_key=api_key, timeout=60.0)
+
+    class _EF(embedding_functions.OpenAIEmbeddingFunction):
+        def __call__(self, input):
+            resp = _oai_client.embeddings.create(input=input, model=EMBEDDING_MODEL)
+            return [e.embedding for e in resp.data]
+
+    ef = _EF(api_key=api_key, model_name=EMBEDDING_MODEL)
 
     if args.full_reindex:
         for name in COLLECTIONS.values():
@@ -168,7 +174,7 @@ def main():
     conn = get_state_conn()
 
     total = 0
-    for dir_name, collection_key in [("curriculum", "curriculum"), ("activities", "activities")]:
+    for dir_name, collection_key in [("curriculum", "curriculum"), ("activities", "activities"), ("principles", "principles")]:
         pattern = os.path.join(EXTRACTED_DIR, dir_name, "*.md")
         for filepath in sorted(glob.glob(pattern)):
             total += index_file(collections[collection_key], conn, collection_key, filepath, force=args.full_reindex)
