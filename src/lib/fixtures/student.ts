@@ -56,3 +56,72 @@ export const fixturePhonicsContent: PhonicsContent[] = [
 export function getDefaultPhonicsContent(): PhonicsContent {
   return fixturePhonicsContent[0];
 }
+
+export interface SpellingWord {
+  word: string;
+  audioHint?: string; // how to say it for TTS
+}
+
+export interface SpellingContent {
+  id: string;
+  title: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  words: SpellingWord[];
+}
+
+export const fixtureSpellingContent: SpellingContent[] = [
+  {
+    id: "spelling-cvc-1",
+    title: "Spell It!",
+    difficulty: "beginner",
+    words: [
+      { word: "cat" },
+      { word: "hat" },
+      { word: "sit" },
+      { word: "big" },
+      { word: "map" },
+    ],
+  },
+  {
+    id: "spelling-cvc-2",
+    title: "More Words",
+    difficulty: "beginner",
+    words: [
+      { word: "cup" },
+      { word: "dog" },
+      { word: "red" },
+      { word: "run" },
+      { word: "hop" },
+    ],
+  },
+];
+
+export function getDefaultSpellingContent(): SpellingContent {
+  return fixtureSpellingContent[0];
+}
+
+export interface ReadAloudPassage {
+  id: string;
+  title: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  text: string;
+}
+
+export const fixtureReadAloudPassages: ReadAloudPassage[] = [
+  {
+    id: "read-aloud-1",
+    title: "The Cat and the Hat",
+    difficulty: "beginner",
+    text: "The cat sat on the mat. The cat had a big hat. The hat was red and fat. The cat likes the hat a lot!",
+  },
+  {
+    id: "read-aloud-2",
+    title: "My Dog Spot",
+    difficulty: "beginner",
+    text: "My dog is Spot. Spot can run and hop. Spot has a big red ball. We play in the sun all day.",
+  },
+];
+
+export function getDefaultReadAloudPassage(): ReadAloudPassage {
+  return fixtureReadAloudPassages[0];
+}
