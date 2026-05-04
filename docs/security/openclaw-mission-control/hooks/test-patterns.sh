@@ -120,6 +120,120 @@ assert_unchanged "var name without value"               "We need to set OPENAI_A
 assert_unchanged "var name in path"                     "see ~/projects/config/OPENAI_API_KEY.example for shape"
 
 echo
+echo "Pass 4 — courtroom regression tests (verdict 2026-05-04)"
+echo "─────────────────────────────────────────────────────────"
+
+# Codex objection #3: redactor exception path must NOT echo input.
+# Force an exception by calling main() with a payload that triggers
+# a downstream failure inside redact(). The simplest reliable trigger
+# is a stdin that's so pathological it provokes a regex engine error
+# — but Python's re is robust enough that this is hard to do via
+# input alone. So we test the OPPOSITE invariant: the source code
+# must not contain the dangerous "Input echoed unchanged" string.
+if ! grep -q "Input echoed unchanged" "$REDACTOR"; then
+  PASS=$((PASS + 1))
+  printf '  ✓ obj#3 regression: redactor source no longer contains "Input echoed unchanged" string\n'
+else
+  FAIL=$((FAIL + 1))
+  FAIL_DETAILS+=("obj#3 regression: redactor still contains the leak-channel echo path")
+  printf '  ✗ obj#3 regression: STILL contains "Input echoed unchanged"\n'
+fi
+
+# Same shape: the FAIL-CLOSED marker must be present.
+if grep -q "REDACTION_FAILED" "$REDACTOR"; then
+  PASS=$((PASS + 1))
+  printf '  ✓ obj#3 regression: REDACTION_FAILED marker present in redactor\n'
+else
+  FAIL=$((FAIL + 1))
+  FAIL_DETAILS+=("obj#3 regression: REDACTION_FAILED marker missing from redactor")
+  printf '  ✗ obj#3 regression: REDACTION_FAILED marker missing\n'
+fi
+
+# Codex objection #2: transcript-redact hook must NOT subprocess+--quiet
+# the redactor. It should use in-process importlib import.
+TRANSCRIPT_HOOK="$(dirname "$0")/transcript-redact.sh"
+if [[ -r "$TRANSCRIPT_HOOK" ]]; then
+  if ! grep -qE "subprocess.*redact-secrets" "$TRANSCRIPT_HOOK" \
+     && grep -q "importlib" "$TRANSCRIPT_HOOK"; then
+    PASS=$((PASS + 1))
+    printf '  ✓ obj#2 regression: transcript-redact uses in-process import, not subprocess\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("obj#2 regression: transcript-redact still uses broken subprocess+stderr-parse path")
+    printf '  ✗ obj#2 regression: transcript-redact has not been migrated to importlib\n'
+  fi
+
+  # Direct call to redact() through the same import path the hook uses
+  # — proves the in-process API works end-to-end. Uses SourceFileLoader
+  # because the redactor's filename ends in .sh (default importlib loaders
+  # are extension-gated and would reject it).
+  RESULT=$(python3 - <<PYEOF 2>&1
+import importlib.util
+from importlib.machinery import SourceFileLoader
+loader = SourceFileLoader("rs", "$REDACTOR")
+spec = importlib.util.spec_from_loader(loader.name, loader)
+mod = importlib.util.module_from_spec(spec)
+loader.exec_module(mod)
+redacted, hits = mod.redact("export INFISICAL_CLIENT_SECRET=opaqueValueHere")
+assert "[REDACTED:INFISICAL_CLIENT_SECRET]" in redacted, "expected redaction marker missing"
+assert any(label.startswith("shell-var:INFISICAL_CLIENT_SECRET") for label, _ in hits), f"expected hit label missing, got {hits}"
+print("OK")
+PYEOF
+)
+  if [[ "$RESULT" == "OK" ]]; then
+    PASS=$((PASS + 1))
+    printf '  ✓ obj#2 regression: in-process rs.redact() returns expected (text, hits) tuple\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("obj#2 regression: in-process redact() call failed: $RESULT")
+    printf '  ✗ obj#2 regression: in-process redact() call broke\n'
+  fi
+else
+  printf '  ⚠ transcript-redact.sh not at expected sibling path; skipping obj#2 checks\n'
+fi
+
+# Codex objection #4: documents the lesson — `... || true` always exits 0
+# even when the dependency is absent. This is a meta-test: it doesn't
+# assert anything about our scripts, it documents the bug class so the
+# lesson stays in the test suite forever.
+TMP_TC=$(mktemp -d)
+ACTUAL_EXIT_OF_BAD_PATTERN=0
+test -d "$TMP_TC/never-existed" && ls "$TMP_TC/never-existed/never-a-lockfile" 2>/dev/null || true
+ACTUAL_EXIT_OF_BAD_PATTERN=$?
+if [[ $ACTUAL_EXIT_OF_BAD_PATTERN -eq 0 ]]; then
+  PASS=$((PASS + 1))
+  printf '  ✓ obj#4 lesson: `test -d X && ls X/y || true` exits 0 even when X absent (documenting bug class)\n'
+else
+  FAIL=$((FAIL + 1))
+  FAIL_DETAILS+=("obj#4 lesson: bash semantics changed? `|| true` no longer makes the chain exit 0")
+fi
+rmdir "$TMP_TC" 2>/dev/null
+
+# Codex objection #4 corollary: containment-register must not contain
+# `|| true` on any blocking precondition.
+CONTAINMENT="$(dirname "$0")/../p0/containment-register.json"
+if [[ -r "$CONTAINMENT" ]]; then
+  BLOCKING_OR_TRUE=$(python3 -c "
+import json, sys
+d = json.load(open('$CONTAINMENT'))
+bad = []
+for f in d.get('disabled_features', []):
+    for p in f.get('preconditions', []):
+        if p.get('blocking', True) and '|| true' in p.get('check', ''):
+            bad.append(f\"{f['id']}/{p['id']}\")
+print(','.join(bad))
+" 2>/dev/null)
+  if [[ -z "$BLOCKING_OR_TRUE" ]]; then
+    PASS=$((PASS + 1))
+    printf '  ✓ obj#4 enforcement: no blocking precondition contains `|| true`\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("obj#4 enforcement: blocking preconditions contain || true: $BLOCKING_OR_TRUE")
+    printf '  ✗ obj#4 enforcement: found blocking preconditions with `|| true`: %s\n' "$BLOCKING_OR_TRUE"
+  fi
+fi
+
+echo
 echo "──────────────────────────────────────────"
 TOTAL=$((PASS + FAIL))
 if [[ $FAIL -eq 0 ]]; then

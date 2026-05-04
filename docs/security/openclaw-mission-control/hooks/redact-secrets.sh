@@ -9,7 +9,9 @@ Composable in pipelines: `cmd | redact-secrets.sh | tee out.txt`
 Exit codes:
   0  — succeeded (whether or not anything was redacted)
   1  — argument or I/O error
-  2  — unhandled exception during redaction (input echoed unchanged on stderr for debugging)
+  2  — unhandled exception during redaction (FAIL-CLOSED: stdout receives
+       `[REDACTION_FAILED:<exception-class>]` marker only; original input is
+       NEVER echoed because that would defeat the entire point of the redactor)
 
 Patterns are organized in two passes:
   1. Shape-matched secrets (sk-ant-..., AKIA..., bot-token shapes, JWTs)
@@ -239,9 +241,16 @@ def main(argv: List[str]) -> int:
     try:
         redacted, hits = redact(text)
     except Exception as e:
-        sys.stderr.write(f"[redact-secrets] ERROR: {e}\n")
-        sys.stderr.write("Input echoed unchanged for debugging:\n")
-        sys.stderr.write(text)
+        # FAIL-CLOSED: never echo the input. Doing so would defeat the entire
+        # purpose of this tool — the input is the thing we couldn't redact.
+        # Emit a fixed marker on stdout so downstream consumers (transcript
+        # capture, log files) see something sensible, and length-only context
+        # on stderr for operator triage.
+        exc_class = type(e).__name__
+        sys.stdout.write(f"[REDACTION_FAILED:{exc_class}]\n")
+        sys.stderr.write(
+            f"[redact-secrets] FAIL: {exc_class} input_len={len(text)} msg={e!s:.200}\n"
+        )
         return 2
     sys.stdout.write(redacted)
     if hits and "--quiet" not in argv:

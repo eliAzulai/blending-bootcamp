@@ -85,15 +85,81 @@
     "_comment": "OpenClaw's pairing flow was the proximate cause of the Apr 28 incident. Default behavior must be to drop unknown-sender messages, not auto-respond."
   },
   "ask_before_emitting": {
-    "_comment": "Any message containing these patterns to a HUMAN identity (not a bot identity) requires per-message approval, even for the publisher role.",
-    "patterns": [
-      "pairing_code",
-      "verification_code",
-      "token",
-      "secret",
-      "password",
-      "api_key",
-      "/^[A-Z0-9]{6,12}$/ when sent as standalone message body (matches PTUKVDSL/ERYXT5QX shape)"
+    "_comment": "Any message matching these rules, sent to a recipient classified as 'human_identity' (not a bot_identities_allowed entry), requires per-message approval — even for the publisher role. The PreToolUse channel-identity-check hook (P3) consumes this directly: each rule is machine-enforceable, no prose-described regex.",
+    "_schema": {
+      "id": "stable identifier — used in audit logs and ack-tracking",
+      "match_type": "one of: keyword | regex | message_shape",
+      "pattern": "for keyword: case-insensitive substring of message body; for regex: a real regex matched against the full message body; for message_shape: a structured shape descriptor (currently supports 'standalone_short_alphanum')",
+      "applies_to": "recipient classification — currently always 'human_identity', but reserved for future 'bot_identity' / 'channel' / 'group' scoping",
+      "action": "currently always 'require_approval'; reserved for future 'block' / 'redact_and_send'"
+    },
+    "rules": [
+      {
+        "id": "keyword-pairing-code",
+        "match_type": "keyword",
+        "pattern": "pairing code",
+        "applies_to": "human_identity",
+        "action": "require_approval",
+        "rationale": "Apr 28 2026 incident — bot auto-replied with the literal phrase context"
+      },
+      {
+        "id": "keyword-verification-code",
+        "match_type": "keyword",
+        "pattern": "verification code",
+        "applies_to": "human_identity",
+        "action": "require_approval"
+      },
+      {
+        "id": "keyword-otp",
+        "match_type": "keyword",
+        "pattern": "one-time password",
+        "applies_to": "human_identity",
+        "action": "require_approval"
+      },
+      {
+        "id": "keyword-token-bare",
+        "match_type": "regex",
+        "pattern": "(?i)\\btoken\\b",
+        "applies_to": "human_identity",
+        "action": "require_approval"
+      },
+      {
+        "id": "keyword-secret-bare",
+        "match_type": "regex",
+        "pattern": "(?i)\\bsecret\\b",
+        "applies_to": "human_identity",
+        "action": "require_approval"
+      },
+      {
+        "id": "keyword-password-bare",
+        "match_type": "regex",
+        "pattern": "(?i)\\bpassword\\b",
+        "applies_to": "human_identity",
+        "action": "require_approval"
+      },
+      {
+        "id": "keyword-api-key",
+        "match_type": "regex",
+        "pattern": "(?i)\\bapi[_\\- ]?key\\b",
+        "applies_to": "human_identity",
+        "action": "require_approval"
+      },
+      {
+        "id": "shape-pairing-code-standalone",
+        "match_type": "message_shape",
+        "pattern": "standalone_short_alphanum",
+        "shape_params": {
+          "min_len": 6,
+          "max_len": 12,
+          "charset_regex": "^[A-Z0-9]+$",
+          "must_be_only_content": true,
+          "_examples_caught": ["PTUKVDSL", "ERYXT5QX"],
+          "_examples_must_not_match": ["hi", "ok", "https://example.com/abc123"]
+        },
+        "applies_to": "human_identity",
+        "action": "require_approval",
+        "rationale": "Apr 28 2026 incident — the literal pairing codes that went to Chana and Herschel were 8-char A-Z0-9 sent as the entire message body. This shape is deterministic enough to catch without false positives on normal short replies (which contain spaces or lowercase)."
+      }
     ]
   },
   "audit": {

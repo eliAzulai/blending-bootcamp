@@ -27,7 +27,7 @@
         {
           "id": "token-claim-lockfile-in-place",
           "description": "Token-uniqueness gate exists for kira-telegram (Gap 3, P0)",
-          "check": "test -d ~/.openclaw/token-claims && ls ~/.openclaw/token-claims/kira-telegram.lock 2>/dev/null || true",
+          "check": "test -f ~/.openclaw/token-claims/kira-telegram.lock",
           "status": "pending"
         },
         {
@@ -204,5 +204,17 @@
     "log_re_enable_attempt": true,
     "log_precondition_check_failure": true,
     "alert_on_re_enable_with_pending_preconditions": "BLOCK"
+  },
+  "validation_rules": {
+    "precondition_check_must_be_failclosed": {
+      "rule": "Every disabled_features[].preconditions[].check command MUST fail-closed: a missing dependency, missing file, or unreachable service must yield non-zero exit. Specifically, the check string MUST NOT contain ' || true' unless the precondition is also marked 'blocking: false'.",
+      "rationale": "A 2026-04-29 incident-response check used the pattern `test -d X && ls X/lockfile 2>/dev/null || true` which exits 0 even when neither the directory nor the lockfile exists. MC would have treated that precondition as ok and let the feature re-enable on a system that had not been hardened. Fail-closed is the only safe default for a re-enable gate.",
+      "linter_command": "jq -r '.disabled_features[].preconditions[] | select((.blocking // true) == true) | select(.check | test(\"\\\\|\\\\| true\\\\b\")) | \"FAIL: \\(.id) -- check uses || true on a blocking precondition\"' containment-register.json | (! grep .)",
+      "added_after": "courtroom verdict 2026-05-04 — Codex objection #4 (severity: major)"
+    },
+    "no_manual_status_for_blocking_check": {
+      "rule": "If a precondition has a non-empty 'check' string AND blocking is implicit (true) or explicit (true), 'status' must be derived from running the check, not asserted manually. MC's verifier should compute status at view time, not trust the JSON value.",
+      "rationale": "Trusting JSON-asserted status defeats the gate — anyone editing the file could flip 'pending' to 'ok' without verifying the underlying state."
+    }
   }
 }

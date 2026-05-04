@@ -85,15 +85,15 @@ The deepest lesson from incident #1: permission systems traditionally model *wha
 
 **Why v1 missed it:** v1's deny list covered `Read(./.env*)` but didn't model commands that *legitimately retrieve secrets and dump them to stdout*.
 
-**v1.1 addition:** Three layers:
-1. Secret-fetching wrappers default to redacted output. `--show-values` requires confirmation prompt.
-2. PreToolUse hook auto-detects secret-fetching commands and forces a recording-aware redaction wrapper.
-3. PostToolUse hook redacts known secret patterns from just-written transcripts at write-time. Patterns: Anthropic (`sk-ant-`), OpenAI (`sk-...`), OpenRouter (`sk-or-...`), Telegram bot tokens (`^[0-9]+:[A-Za-z0-9_-]{35}$`), Discord bot tokens, Infisical secrets, Supabase JWTs (`eyJ...`), AWS (`AKIA...`), GitHub (`ghp_`, `gho_`, `ghs_`, `ghr_`, `github_pat_`).
+**v1.1 addition:** Three layers, **deployed across two phases**:
+1. **P0.5** — Secret-fetching wrappers default to redacted output. `--show-values` requires confirmation prompt. Specifically: `~/.local/bin/pull-env.sh` shadows the existing one and adds the gate. (P0.5 is a dedicated phase between P0 and P1 — see migration table — because `pull-env.sh` is the **incident root command path**, while the rest of the redaction stack is defense-in-depth. P0.5 ships within 48h of P0, ungated by P1 work.)
+2. **P3** — PreToolUse hook auto-detects secret-fetching commands and forces a recording-aware redaction wrapper for any sibling secret-fetcher we missed.
+3. **P0 (detection-only) → P2 (active rewrite)** — PostToolUse hook scans tool outputs for known secret patterns. **P0 ships detection-only**: writes a JSONL audit event to a sidecar at `<transcript_path>.redacted-events.jsonl` recording WHAT KIND of secret was caught (no values, no positions). The original transcript is **NOT modified** at P0 — chain-of-custody preserved, learning gathered. **P2 wires the active in-place rewrite path** that uses the same hook with `.pre-redact` backup file alongside any rewritten transcript. The split is deliberate: detection-first lets us calibrate false-positive rates against real session data before doing anything destructive to the canonical transcript. Patterns: Anthropic (`sk-ant-`), OpenAI (`sk-...`), OpenRouter (`sk-or-...`), Telegram bot tokens (`^[0-9]+:[A-Za-z0-9_-]{35}$`), Discord bot tokens, Infisical secrets, Supabase JWTs (`eyJ...`), AWS (`AKIA...`), GitHub (`ghp_`, `gho_`, `ghs_`, `ghr_`, `github_pat_`).
 
-**Concrete deliverable:** `hooks/redact-secrets.sh` (library) + `hooks/transcript-redact.sh` (PostToolUse hook) — written in this commit set. Wrapper for `pull-env.sh` is P2.
+**Concrete deliverables in this commit set:** `hooks/redact-secrets.sh` (library, fail-closed on exception — never echoes input) + `hooks/transcript-redact.sh` (PostToolUse hook, in-process importlib import of the library, sidecar audit event only). Wrapper for `pull-env.sh` lands in P0.5 (separate, ships within 48h). Active in-place transcript rewrite lands in P2.
 
 `★ Insight ─────────────────────────────────────`
-The non-obvious rotation cost wasn't the rotation itself — it was discovering 20+ leak locations in AI tool session logs. **Every AI tool is a recording device for every other AI tool's mistakes.** Redaction must happen at write-time, not display-time, because cleanup of historical files is impractical.
+The non-obvious rotation cost wasn't the rotation itself — it was discovering 20+ leak locations in AI tool session logs. **Every AI tool is a recording device for every other AI tool's mistakes.** Active redaction at write-time is the eventual goal (P2), but P0 deliberately ships detection-only so the false-positive rate can be measured against real session data before anything destructive runs against a live transcript. The sidecar audit event tells us which kinds we'd be redacting, in what session, without yet touching the canonical file.
 `─────────────────────────────────────────────────`
 
 ### Gap 5 — Credential consumer registry
@@ -102,9 +102,9 @@ The non-obvious rotation cost wasn't the rotation itself — it was discovering 
 
 **Why v1 missed it:** v1 doesn't model "every place a credential is cached."
 
-**v1.1 addition:** `credential-consumers.json` (P0) is the canonical registry. Every cache for each credential is registered with `rewrite_command` + `post_rotation_health_check`. Rotation is one transactional command (`mc-cli rotate <CRED>`) that iterates all consumers, runs each rewrite, and verifies each consumer's auth path. Adding a new consumer without registering is a lint error.
+**v1.1 addition:** `credential-consumers.json` is the **canonical registry SCHEMA + initial seed inventory** at P0. The file ships with `"status": "seed_inventory"` at the top level — explicit acknowledgement that it's incomplete (it has TODOs for ANTHROPIC_API_KEY, marline-side tokens, and a `<TODO-fill...>` placeholder for the ClaudeCode discord bot id we never confirmed). `mc-cli rotate <CRED>` (lands in P1) MUST gate on the `validate_credential` rule per credential before treating any rotation as transactional: refuses to rotate if the entry has `_planned: true` consumers, contains string TODO placeholders, has unreachable consumer paths, or has unreachable consumer hosts. Rotating a credential that fails validation is a **runtime error**, not a warning. Adding a new consumer of a registered credential without listing it here is a **lint error**.
 
-**Concrete deliverable:** `p0/credential-consumers.json` — written, deploys to `~/.openclaw/`. `mc-cli rotate` command is P1-P2.
+**Concrete deliverable:** `p0/credential-consumers.json` — written with seed_inventory status + validate_credential rule, deploys to `~/.openclaw/`. `mc-cli rotate` command lands in P1, gated on validate_credential.
 
 ### Gap 6 — Heartbeat / silent-failure detection
 
@@ -212,12 +212,13 @@ Cross-host: scan also runs on Hetzner via SSH (read-only) and m1book the same. O
 | Phase | Scope | Days | Reversible? |
 |---|---|---|---|
 | **P0 (week 0)** | Land Gaps 1, 3 (lockfile dir), 5, 7 — channel identity + token claim infra + cred registry + containment register. **All four files written; deploy is a copy step.** | 2-3 | yes |
-| **P1 (week 1)** | Schema + audit (read-only). Stand up heartbeat (Gap 6), namespace sentinel scan in read-only mode (Gap 2 monitor), claim-token.sh wrapper (Gap 3 enforcement), mc-cli rotate (Gap 5 transactional). Write `agent-roles.policy.json`. | 3-5 | yes |
-| **P2 (week 2)** | Managed settings + sandbox floor. Wrap secret-fetching commands (Gap 4 wrappers). Install transcript-redact.sh as PostToolUse hook (Gap 4 redaction). | 3-5 | yes — managed settings have `disableBypassPermissionsMode` for circuit-breaker |
-| **P3 (week 3)** | PreToolUse hook (`role-enforce.sh`) + channel-identity-check hook (Gap 1 enforcement) + trusted-tasks.json seeded from P1 audit data. | 3-5 | yes |
-| **P4 (week 4)** | MC lockdown: drop write endpoints, add token-claim referee + namespace sentinel write-mode + containment-register banner UI (Gap 8). Set policy files root-owned. Flip `allowManagedPermissionRulesOnly: true`. | 5-7 | yes via git revert |
+| **P0.5 (within 48h of P0 — NOT gated on P1 work)** | Replace `~/.local/bin/pull-env.sh` with the safe wrapper: defaults to `--check-only` (metadata only), requires confirm prompt for `--show-values`. This is the **incident root command path** — shipping the policy bundle (P0) without this lets the same leak class recur. Single-purpose, single-commit phase. | 0.5-1 | yes — old wrapper backed up at `~/.local/bin/pull-env.sh.pre-p0.5` |
+| **P1 (week 1)** | Schema + audit (read-only). Stand up heartbeat (Gap 6), namespace sentinel scan in read-only mode (Gap 2 monitor), claim-token.sh wrapper (Gap 3 enforcement), mc-cli rotate (Gap 5 transactional, gated on `validate_credential`). Write `agent-roles.policy.json`. | 3-5 | yes |
+| **P2 (week 2)** | Managed settings + sandbox floor. **Active in-place transcript rewrite** (Gap 4): switch transcript-redact.sh from sidecar-detection to in-place rewrite with `.pre-redact` backup. Wrap remaining secret-fetching commands not covered by P0.5 (PreToolUse auto-detection). Install transcript-redact.sh as PostToolUse hook in `~/.claude/settings.json`. | 3-5 | yes — managed settings have `disableBypassPermissionsMode` for circuit-breaker; transcript backup file enables manual revert |
+| **P3 (week 3)** | PreToolUse hook (`role-enforce.sh`) + channel-identity-check hook (Gap 1 enforcement, consumes the structured `ask_before_emitting.rules` schema) + trusted-tasks.json seeded from P1 audit data. | 3-5 | yes |
+| **P4 (week 4)** | MC lockdown: drop write endpoints, add token-claim referee + namespace sentinel write-mode (with parent-process matching, NOT just process-name whitelist) + containment-register banner UI (Gap 8). Set policy files root-owned. Flip `allowManagedPermissionRulesOnly: true`. | 5-7 | yes via git revert |
 
-Each phase is reversible. None requires a big rewrite. P0 is intentionally tiny and immediate.
+Each phase is reversible. None requires a big rewrite. P0 is intentionally tiny and immediate. **P0.5 is the load-bearing follow-up** — if P0.5 drifts behind P1, the plan effectively still leaves the incident root unmitigated. Treat P0.5 missing the 48h deadline as a planning failure that triggers re-review of the whole rollout sequence.
 
 ---
 
@@ -249,6 +250,8 @@ Each phase is reversible. None requires a big rewrite. P0 is intentionally tiny 
 3. **Codex's session jsonl files** still accumulate secrets historically (see ROTATION-MAP.md). v1.1 prevents future leaks but doesn't clean the past 30+ files. Rotation is the safe answer; in-place scrubbing risks editing forensic evidence.
 4. **Hermes is a black box** until we have its logs.
 5. **Watchdog correctness** is an ops correctness bug, not a security bug — out of scope for this plan but tracked in containment-register.json with explicit preconditions.
+6. **Namespace sentinel relies on parent-process matching, which Linux/macOS doesn't make trivially robust.** v1.1 fixes the obvious "node whitelist too broad" hole by walking ppid → parent comm via `ps -o comm=`, but determined evasion (process renaming, double-fork) can defeat this. Mitigation: combine with the `bun --cwd` pattern check AND the Cursor app-bundle quarantine — three weak signals together are stronger than one strong signal.
+7. **Detection-only PostToolUse hook (P0)** does not actually clean leaked secrets from transcripts — it only records what would be redacted. P2 active rewrite is what closes this loop. Until then, redacted-events.jsonl sidecars give visibility but the canonical transcript still contains the leak. The sequencing is deliberate (detection-first, calibration before destructive action) but means P0→P2 is the load-bearing path for the redaction story, not P0 alone.
 
 ---
 

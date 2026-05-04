@@ -92,14 +92,33 @@
     },
     {
       "id": "no-foreign-process-in-claude-plugins",
-      "command": "lsof +D ~/.claude/plugins 2>/dev/null | awk 'NR>1 && $1 != \"claude\" && $1 != \"node\" {print}' | wc -l | grep -q '^0$'",
-      "on_fail": "alert with lsof output — list every foreign process touching the dir",
+      "_replaced_by_below_2026-05-04": "Original `awk '$1 != \"node\"'` whitelist was too broad — it allowed BOTH legitimate Claude plugin runtime AND the actual Cursor bridges (which are commonly Node/bun processes). Replaced with parent-process-aware checks below per courtroom verdict 2026-05-04 (Codex objection #5, severity major).",
+      "command": "ls /dev/null",
+      "on_fail": "n/a — superseded",
+      "frequency": "deprecated"
+    },
+    {
+      "id": "no-foreign-parent-on-claude-plugins-fd",
+      "_comment": "Replacement for the over-broad node-name whitelist. Enumerate every PID with a fd inside ~/.claude/plugins via lsof, walk up to the parent process, and FAIL on any parent comm not in the allowlist. Allowlist: claude, claude-code (Claude Code runtime); reject explicitly: Cursor, Cursor Helper (Plugin), Code, Code Helper (Plugin), bun (when its parent isn't claude). The ppid lookup is the load-bearing piece — process name alone collides between Claude's and Cursor's runtimes.",
+      "command": "set -o pipefail; ALLOW='^(claude|claude-code|node)$'; PARENT_ALLOW='^(claude|claude-code|launchd)$'; bad=$(lsof -nFpcR +D ~/.claude/plugins 2>/dev/null | awk 'BEGIN{p=\"\";c=\"\";r=\"\"} /^p/{if(p!=\"\")print p\"|\"c\"|\"r; p=substr($0,2); c=\"\"; r=\"\"} /^c/{c=substr($0,2)} /^R/{r=substr($0,2)} END{if(p!=\"\")print p\"|\"c\"|\"r}' | while IFS='|' read pid comm ppid; do echo \"$comm\" | grep -Eq \"$ALLOW\" || { echo \"NAME-NOT-ALLOWED: $pid $comm (ppid=$ppid)\"; continue; }; pcomm=$(ps -o comm= -p \"$ppid\" 2>/dev/null | xargs basename 2>/dev/null); echo \"$pcomm\" | grep -Eq \"$PARENT_ALLOW\" || echo \"PARENT-NOT-ALLOWED: $pid $comm parent=$pcomm\"; done); test -z \"$bad\"",
+      "on_fail": "alert with the bad-process list AND the relevant `ps -ef` rows for the offending ppids — operator needs both pieces to identify the foreign tool",
+      "frequency": "every 30 min via launchd",
+      "_known_offenders_to_catch": [
+        "Cursor's anysphere.cursor-mcp extension spawning under 'Cursor Helper (Plugin)' parent",
+        "bun run --cwd ~/.claude/plugins/cache/claude-plugins-official/discord/* with parent NOT in claude-code"
+      ]
+    },
+    {
+      "id": "no-bun-cwd-in-claude-plugins-with-non-claude-parent",
+      "_comment": "Belt-and-suspenders for the specific Cursor bridge cmdline shape from project_discord_bridge_zombie_launchers memory. If a `bun` process has its working dir inside ~/.claude/plugins AND its parent isn't a claude-code process, alert and kill.",
+      "command": "set -o pipefail; bad=$(pgrep -fl 'bun.*--cwd.*\\.claude/plugins' 2>/dev/null | while read pid rest; do ppid=$(ps -o ppid= -p \"$pid\" | tr -d ' '); pcomm=$(ps -o comm= -p \"$ppid\" 2>/dev/null | xargs basename 2>/dev/null); case \"$pcomm\" in claude|claude-code) ;; *) echo \"$pid $rest (parent=$pcomm)\";; esac; done); test -z \"$bad\"",
+      "on_fail": "alert + offer kill of matching PIDs (do NOT auto-kill — parent might be legitimate user-launched debug session)",
       "frequency": "every 30 min via launchd"
     },
     {
       "id": "no-cursor-mcp-bridge-process",
       "command": "! pgrep -f 'claude-plugins-official/discord' >/dev/null",
-      "on_fail": "alert + kill matching PIDs",
+      "on_fail": "alert + offer kill matching PIDs",
       "frequency": "every 30 min"
     }
   ]

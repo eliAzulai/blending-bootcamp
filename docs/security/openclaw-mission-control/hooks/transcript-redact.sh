@@ -40,16 +40,61 @@ Target deploy path: ~/.claude/hooks/transcript-redact.sh
 """
 
 import datetime as dt
+import importlib.util
 import json
 import os
-import subprocess
 import sys
+from importlib.machinery import SourceFileLoader
 from pathlib import Path
+from typing import Tuple, List
 
 REDACTOR = os.environ.get(
     "REDACT_SECRETS_BIN",
     str(Path.home() / ".local" / "bin" / "redact-secrets.sh"),
 )
+
+
+def _load_redactor_module():
+    """
+    Load redact-secrets.sh as a Python module via importlib.
+
+    Why in-process import instead of subprocess: prior implementation called
+    `subprocess.run([..., '--quiet'], ...)` then tried to parse the kinds list
+    out of stderr, but --quiet suppresses exactly the line being parsed
+    (verified: redact-secrets.sh main() only writes the kinds summary when
+    --quiet is NOT in argv). The audit path was dead code.
+
+    Why explicit SourceFileLoader: the file's extension is .sh (intentional —
+    matches the README's deploy paths and the hook surface convention). The
+    default `spec_from_file_location` registers loaders by extension and
+    returns None for unrecognized extensions. Forcing SourceFileLoader bypasses
+    that check and reads the file as Python source regardless of the suffix.
+
+    In-process import gives us redact() returning (redacted_text, hits)
+    directly — no format coupling, no exec overhead, and the redacted text
+    is now in memory ready for the P2 active-rewrite path.
+    """
+    candidates = [Path(REDACTOR), Path(__file__).parent / "redact-secrets.sh"]
+    for path in candidates:
+        if path.exists():
+            try:
+                loader = SourceFileLoader("redact_secrets", str(path))
+                spec = importlib.util.spec_from_loader(loader.name, loader)
+                if spec is None:
+                    continue
+                mod = importlib.util.module_from_spec(spec)
+                loader.exec_module(mod)
+                return mod
+            except Exception as e:
+                sys.stderr.write(
+                    f"[transcript-redact] failed to load redactor from {path}: "
+                    f"{type(e).__name__}: {e}\n"
+                )
+                continue
+    return None
+
+
+_REDACTOR_MOD = _load_redactor_module()
 
 
 def _extract_content(tool_response) -> str:
@@ -77,42 +122,29 @@ def _extract_content(tool_response) -> str:
     return ""
 
 
-def _run_redactor(text: str) -> tuple[str, list[str]]:
-    """Subprocess to redact-secrets.sh. Returns (redacted_text, kinds_found)."""
-    if not Path(REDACTOR).exists():
-        # Fallback: try the staging path so this hook works during development
-        # before the file is copied to ~/.local/bin/.
-        fallback = Path(__file__).parent / "redact-secrets.sh"
-        if fallback.exists():
-            redactor = str(fallback)
-        else:
-            sys.stderr.write(
-                f"[transcript-redact] redact-secrets.sh not found at {REDACTOR}; "
-                f"set REDACT_SECRETS_BIN or deploy per README.\n"
-            )
-            return text, []
-    else:
-        redactor = REDACTOR
-
-    proc = subprocess.run(
-        ["python3", redactor, "--quiet"],
-        input=text,
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    redacted = proc.stdout
-    # The redactor writes "[redact-secrets] redacted N secret(s) of kinds: [...]"
-    # on stderr. Parse the kinds out of it for audit.
-    kinds: list[str] = []
-    for line in proc.stderr.splitlines():
-        if "kinds:" in line:
-            try:
-                # "...kinds: ['anthropic-key', 'jwt']"
-                kinds_str = line.split("kinds:", 1)[1].strip()
-                kinds = json.loads(kinds_str.replace("'", '"'))
-            except (ValueError, IndexError):
-                pass
+def _run_redactor(text: str) -> Tuple[str, List[str]]:
+    """In-process call to redact-secrets.redact(). Returns (redacted_text, kinds)."""
+    if _REDACTOR_MOD is None:
+        sys.stderr.write(
+            f"[transcript-redact] redact-secrets module could not be loaded "
+            f"(tried {REDACTOR} and sibling fallback). Set REDACT_SECRETS_BIN "
+            f"or deploy per README.\n"
+        )
+        return text, []
+    try:
+        redacted, hits = _REDACTOR_MOD.redact(text)
+    except Exception as e:
+        # FAIL-CLOSED here too: do NOT echo the input. We don't even know
+        # which patterns matched before the exception — return empty kinds
+        # and replace the content with a fixed marker so downstream sees
+        # the failure.
+        exc_class = type(e).__name__
+        sys.stderr.write(
+            f"[transcript-redact] redactor raised: {exc_class} input_len={len(text)}\n"
+        )
+        return f"[REDACTION_FAILED:{exc_class}]", []
+    # hits is List[Tuple[label, snippet]]; we only surface the labels.
+    kinds = sorted({label for label, _snippet in hits})
     return redacted, kinds
 
 
