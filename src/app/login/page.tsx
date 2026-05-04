@@ -18,18 +18,40 @@ export default function LoginPage() {
     setError("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      setError(error.message);
+    if (signInError) {
+      setError(signInError.message);
       setLoading(false);
-    } else {
-      router.push("/");
-      router.refresh();
+      return;
     }
+
+    // Role-aware redirect
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setError("Login succeeded but user not found");
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role === "teacher") {
+      router.push("/teacher");
+    } else {
+      router.push("/student");
+    }
+    router.refresh();
   }
 
   return (
@@ -39,7 +61,7 @@ export default function LoginPage() {
           Welcome Back!
         </h1>
         <p className="mb-6 text-center text-sm text-gray-500">
-          Sign in to continue your child&apos;s learning journey
+          Sign in to continue
         </p>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -50,7 +72,6 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
-            style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
           <input
             type="password"
@@ -60,7 +81,6 @@ export default function LoginPage() {
             required
             minLength={6}
             className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
-            style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
 
           {error && (

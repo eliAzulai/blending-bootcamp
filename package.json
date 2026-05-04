@@ -1,8 +1,9 @@
 {
-  "name": "blending-bootcamp",
+  "name": "wordpets",
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "pull-secrets": "node ~/projects/infisical/pull-env.js 2423b7fc-bb02-4075-aba8-d7d04aacc820 prod .env.local",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

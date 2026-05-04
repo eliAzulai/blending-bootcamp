@@ -1,0 +1,192 @@
+# File classification for the WordPets teaching resources KB.
+# Hand-maintained. Add new files here before running extract.py.
+#
+# Fields:
+#   extraction: vision | text | skip  — how to pull content out
+#   grade: list of [K, "1", "2", "3+"]  — target age range
+#   domain: list of [curriculum, activity, both]  — which collection(s) to index into
+#   program: string or null  — source program/publisher
+#   topics: list of strings  — freeform tags for discoverability
+
+files:
+  "Letterbook 1 Cc.pdf":
+    extraction: vision
+    grade: [K]
+    domain: [curriculum]
+    program: "Ahava Scholastic"
+    topics: [letter-c, phonics, CVC, handwriting]
+
+  "Letterbook 3 Gg.pdf":
+    extraction: vision
+    grade: [K]
+    domain: [curriculum]
+    program: "Ahava Scholastic"
+    topics: [letter-g, phonics, CVC, handwriting]
+
+  "Letterbook 5 Dd.pdf":
+    extraction: vision
+    grade: [K]
+    domain: [curriculum]
+    program: "Ahava Scholastic"
+    topics: [letter-d, phonics, CVC, handwriting]
+
+  "Book 11 - Dad and Sam.pdf":
+    extraction: vision
+    grade: ["1", "2"]
+    domain: [curriculum]
+    program: "Whitebooklets"
+    topics: [decodable-reader, CVC, short-a]
+
+  "WB 12 - A Lot On Top.pdf":
+    extraction: vision
+    grade: ["1", "2"]
+    domain: [curriculum]
+    program: "Whitebooklets"
+    topics: [decodable-reader, CVC, short-o]
+
+  "WB 18 - My Cat Can.pdf":
+    extraction: vision
+    grade: ["1", "2"]
+    domain: [curriculum]
+    program: "Whitebooklets"
+    topics: [decodable-reader, CVC, short-a]
+
+  "WB 31 - Two Dogs.pdf":
+    extraction: vision
+    grade: ["1", "2"]
+    domain: [curriculum]
+    program: "Whitebooklets"
+    topics: [decodable-reader, recurring-characters]
+
+  "WB 32 - Yip Yap.pdf":
+    extraction: vision
+    grade: ["1", "2"]
+    domain: [curriculum]
+    program: "Whitebooklets"
+    topics: [decodable-reader, recurring-characters]
+
+  "WB 33 - A Trip in the Van.pdf":
+    extraction: vision
+    grade: ["1", "2"]
+    domain: [curriculum]
+    program: "Whitebooklets"
+    topics: [decodable-reader, recurring-characters]
+
+  "ABC See Hear Do Cat Mat Lowercase.pdf":
+    extraction: vision
+    grade: [K]
+    domain: [both]
+    program: "ABC See Hear Do"
+    topics: [phonics, TPR, movement, lowercase, CVC]
+
+  "ABC4 Giant Flashcards.pdf":
+    extraction: vision
+    grade: [K, "1"]
+    domain: [curriculum]
+    program: "ABC See Hear Do"
+    topics: [flashcards, long-vowels]
+
+  "ABC4 Writing Practice Book.pdf":
+    extraction: text
+    grade: [K, "1"]
+    domain: [curriculum]
+    program: "ABC See Hear Do"
+    topics: [writing, long-vowels, word-practice]
+
+  "Handwriting S1-B2.pdf":
+    extraction: text
+    grade: [K, "1"]
+    domain: [curriculum]
+    program: "Dash into Learning"
+    topics: [handwriting, print, letter-formation]
+
+  "Red Cat Reading Phonics Level1 A.pdf":
+    extraction: text
+    grade: [K, "1"]
+    domain: [curriculum]
+    program: "Red Cat Reading"
+    topics: [phonics, CVC, kids-vs-phonics]
+
+  "Hamburger Writing Sample.pdf":
+    extraction: text
+    grade: ["2", "3+"]
+    domain: [activity]
+    program: "Super Teacher Worksheets"
+    topics: [writing, structure, paragraph]
+
+  "Would You Rather Cards.pdf":
+    extraction: text
+    grade: ["1", "2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [writing-prompts, speaking, discussion]
+
+  "ABC Calm Down Strategy Cards.pdf":
+    extraction: text
+    grade: [K, "1"]
+    domain: [activity]
+    program: null
+    topics: [SEL, yoga, movement, calm-down]
+
+  "Ice Cream Cone Letter Matching.pdf":
+    extraction: vision
+    grade: [K]
+    domain: [both]
+    program: "The Art Kit"
+    topics: [letter-matching, uppercase, lowercase, craft]
+
+  "Knock Knock Jokes.pdf":
+    extraction: text
+    grade: ["1", "2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [jokes, reading-fluency, humor]
+
+  "TECHNOLOGY ESL.pdf":
+    extraction: text
+    grade: ["2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [ESL, topic-lesson, technology, conversation]
+
+  "Animals ESL.pdf":
+    extraction: text
+    grade: ["2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [ESL, topic-lesson, animals, conversation]
+
+  "Write-a-thon Explanation.pdf":
+    extraction: text
+    grade: ["2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [writing, event, extended-writing]
+
+  "Visual Conversation Starter.pdf":
+    extraction: vision
+    grade: ["1", "2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [conversation, visual-prompt, writing]
+
+  "Shelter Poem.pdf":
+    extraction: vision
+    grade: ["2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [poetry, acrostic, current-events]
+
+  "Snoopy Comic Example.png":
+    extraction: vision
+    grade: ["2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [comic-strip, writing, humor]
+
+  "Wordcloud Israel.jpg":
+    extraction: vision
+    grade: ["1", "2", "3+"]
+    domain: [activity]
+    program: null
+    topics: [vocabulary, wordcloud, holidays, Israel]

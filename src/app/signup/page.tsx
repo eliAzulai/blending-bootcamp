@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SignupPage() {
+export default function TeacherSignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -17,7 +19,8 @@ export default function SignupPage() {
     setError("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -25,49 +28,49 @@ export default function SignupPage() {
       },
     });
 
-    if (error) {
-      setError(error.message);
+    if (authError) {
+      setError(authError.message);
       setLoading(false);
-    } else {
-      setSuccess(true);
-      setLoading(false);
+      return;
     }
-  }
 
-  if (success) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-xl">
-          <div className="mb-4 text-5xl">📬</div>
-          <h1 className="mb-2 text-2xl font-extrabold text-green-600">
-            Check your email!
-          </h1>
-          <p className="text-sm text-gray-500">
-            We sent a confirmation link to <strong>{email}</strong>. Click it to
-            activate your account.
-          </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-block rounded-xl bg-purple-600 px-6 py-3 font-bold text-white shadow-md hover:bg-purple-700"
-          >
-            Back to Sign In
-          </Link>
-        </div>
-      </div>
-    );
+    if (authData.user) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({ id: authData.user.id, role: "teacher", name });
+
+      if (profileError) {
+        setError(profileError.message);
+        setLoading(false);
+        return;
+      }
+
+      router.push("/teacher");
+      router.refresh();
+    }
+
+    setLoading(false);
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-xl">
         <h1 className="mb-2 text-center text-3xl font-extrabold text-purple-700">
-          Create Account
+          Teacher Signup
         </h1>
         <p className="mb-6 text-center text-sm text-gray-500">
-          Start your child&apos;s 14-day reading journey
+          Create your WordPets teacher account
         </p>
 
         <form onSubmit={handleSignup} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
+          />
           <input
             type="email"
             placeholder="Email"
@@ -75,7 +78,6 @@ export default function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
-            style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
           <input
             type="password"
@@ -85,7 +87,6 @@ export default function SignupPage() {
             required
             minLength={6}
             className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
-            style={{ userSelect: "auto", WebkitUserSelect: "auto" }}
           />
 
           {error && (
@@ -99,16 +100,13 @@ export default function SignupPage() {
             disabled={loading}
             className="rounded-xl bg-purple-600 px-6 py-3 text-lg font-bold text-white shadow-md transition-all hover:bg-purple-700 active:scale-95 disabled:opacity-50"
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Creating account..." : "Create Teacher Account"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-purple-600 hover:text-purple-700"
-          >
+          <Link href="/login" className="font-semibold text-purple-600 hover:text-purple-700">
             Sign In
           </Link>
         </p>

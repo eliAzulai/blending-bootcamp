@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ilana Interview Guide — WordPets</title>
+<style>
+  :root {
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #7C3AED;
+    --accent-soft: #ede9fe;
+    --rule: #e5e7eb;
+    --bg: #ffffff;
+    --callout-bg: #fff8e1;
+    --callout-border: #f3d36a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f5f5f4;
+    color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    font-size: 12pt;
+    line-height: 1.55;
+  }
+  .page {
+    max-width: 720px;
+    margin: 2rem auto;
+    background: var(--bg);
+    padding: 2.5rem 3rem;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    border-radius: 6px;
+  }
+  .toolbar {
+    max-width: 720px;
+    margin: 1rem auto 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  .toolbar button {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 10pt;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--rule);
+    background: #fff;
+    color: var(--ink);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .toolbar button:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  h1 {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 26pt;
+    font-weight: 800;
+    color: var(--accent);
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    color: var(--muted);
+    font-size: 11pt;
+    margin-bottom: 1.5rem;
+  }
+  h2 {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 16pt;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 2rem 0 0.5rem;
+    border-bottom: 2px solid var(--accent-soft);
+    padding-bottom: 0.25rem;
+  }
+  .part-intro {
+    font-style: italic;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    font-size: 11pt;
+  }
+  ol { padding-left: 1.4rem; }
+  ol li {
+    margin: 0.9rem 0;
+    padding-left: 0.25rem;
+  }
+  ol li::marker {
+    font-family: -apple-system, sans-serif;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .q-lead {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .q-follow {
+    color: var(--muted);
+  }
+  blockquote {
+    margin: 1rem 0;
+    padding: 0.9rem 1.1rem;
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    border-radius: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 11pt;
+    font-style: italic;
+    color: #5c4a00;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 2rem 0;
+  }
+  .write-space {
+    margin-top: 0.5rem;
+    border-bottom: 1px dotted var(--rule);
+    height: 1.4em;
+  }
+  .write-space + .write-space { margin-top: 0.4em; }
+  .footer-note {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 10pt;
+    color: var(--muted);
+    margin-top: 2.5rem;
+    text-align: center;
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+  }
+
+  @media print {
+    body { background: white; font-size: 11pt; }
+    .toolbar { display: none; }
+    .page {
+      box-shadow: none;
+      border-radius: 0;
+      margin: 0;
+      max-width: none;
+      padding: 0.75in 0.85in;
+    }
+    h2 { page-break-after: avoid; break-after: avoid; }
+    ol li { page-break-inside: avoid; break-inside: avoid; }
+    blockquote { page-break-inside: avoid; break-inside: avoid; }
+    h1 { color: #000; }
+    h2 { color: #000; border-bottom-color: #ccc; }
+    ol li::marker { color: #000; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+
+<div class="page">
+
+<h1>Ilana Interview Guide</h1>
+<div class="subtitle">WordPets — teacher input before building activities &amp; daily practice · 30–45 min · recorded</div>
+
+<blockquote>
+"I've been building a practice app called WordPets that would work alongside your teaching — your students do short daily practice between your sessions, earn rewards for a virtual pet, and you see who's practicing in a dashboard. Before I build the actual lesson content and activities, I want to make sure I'm building what you actually need. These questions are to help me understand your teaching, not to test you — there are no right answers. Feel free to say 'I don't know' or 'this question doesn't make sense.'"
+</blockquote>
+
+<h2>Part 1 · Your Teaching <span style="font-weight:400;font-size:10pt;color:var(--muted);">(5–10 min)</span></h2>
+<div class="part-intro">These questions ground everything. Don't rush them.</div>
+<ol>
+  <li><span class="q-lead">Walk me through a typical lesson with a 7-year-old student.</span> <span class="q-follow">What do you do at the start? Middle? End? What activities work best with them?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What do you currently assign between sessions?</span> <span class="q-follow">Worksheets? Reading? Writing? How do you send it — WhatsApp, email, handouts?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">Of the students you assign homework to, roughly what percentage actually do it?</span> <span class="q-follow">Your best guess.</span>
+    <div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What's the #1 thing holding your students back right now?</span> <span class="q-follow">Don't say "reading" — get specific. Confidence? Decoding? Memory? Attention? Parent support?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">Which of your current students are you most frustrated with?</span> <span class="q-follow">What's the pattern you see?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">Which students are you most excited about?</span> <span class="q-follow">What makes them work?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+</ol>
+
+<h2>Part 2 · Content <span style="font-weight:400;font-size:10pt;color:var(--muted);">(5–10 min)</span></h2>
+<ol start="7">
+  <li><span class="q-lead">Do you create teaching materials yourself, reuse from other sources, or both?</span> <span class="q-follow">How do you decide?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">If you have a pile of PDFs/worksheets/passages you already use, would you want to upload those into an app, or would it feel like extra work?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">For reading passages — do you pick from books, websites, write your own, or something else?</span> <span class="q-follow">What level of English is appropriate for your 6–8 year olds?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">Do you use sight word lists (Dolch/Fry) or something else for vocabulary?</span>
+    <div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What kind of spelling practice actually works with your kids?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+</ol>
+
+<h2>Part 3 · The App Idea <span style="font-weight:400;font-size:10pt;color:var(--muted);">(10–15 min)</span></h2>
+<div class="part-intro">This is the core. Slow down here.</div>
+<ol start="12">
+  <li><span class="q-lead">What's your honest reaction to the idea of a companion app?</span> <span class="q-follow">Excited, skeptical, curious, overwhelmed?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">If this app existed tomorrow, would you actually use it with your students, or does it feel like one more thing on your plate?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What would make a 7-year-old actually open the app every day?</span> <span class="q-follow">In your experience, what hooks these kids?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What would make YOU use it with students vs forget it exists?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">Is there something you wish existed for your teaching that doesn't?</span> <span class="q-follow">(Don't constrain to apps — could be anything.)</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What would you NOT want the app to do?</span> <span class="q-follow">Things that would annoy you, embarrass your students, or create more work.</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">The pet thing — is that appealing to your age group?</span> <span class="q-follow">Would kids name a pet, care about it, come back for it? Or is that more of a younger-kid thing?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+</ol>
+
+<h2>Part 4 · Logistics <span style="font-weight:400;font-size:10pt;color:var(--muted);">(5–10 min)</span></h2>
+<ol start="19">
+  <li><span class="q-lead">How many of your current students would you pilot this with? Which ones and why?</span> <span class="q-follow">Don't feel obligated — if the answer is zero, that's useful to know.</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">How much time are you realistically willing to spend on this per week?</span> <span class="q-follow">Be honest — 5 min? 30 min? An hour? More?</span>
+    <div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What about the parents?</span> <span class="q-follow">Will they install an app for their kid without convincing, or not?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">Do you charge parents separately for between-session work right now, or is it included in your teaching fee?</span>
+    <div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What's your biggest hesitation about this whole project?</span> <span class="q-follow">What could go wrong?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+</ol>
+
+<h2>Part 5 · Speech Recognition Test <span style="font-weight:400;font-size:10pt;color:var(--muted);">(5 min — optional but valuable)</span></h2>
+<div class="part-intro">If Eli can play a sample of Whisper transcribing a 7-year-old reading aloud:</div>
+<ol start="24">
+  <li><span class="q-lead">Listen to this — a kid reading a passage, and here's what the AI transcribed.</span> <span class="q-follow">Would you trust this to tell a kid "correct" or "try again"?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">If the AI transcription is imperfect, would you rather have:</span>
+    <div style="margin-top:0.3rem;font-family:-apple-system,sans-serif;font-size:11pt;">
+      (a) AI grades strictly — kid sees pass/fail<br>
+      (b) AI grades leniently — always says "great job"<br>
+      (c) AI just records the attempt and you review it when you have time
+    </div>
+    <div class="write-space" style="margin-top:0.6rem;"></div>
+  </li>
+</ol>
+
+<h2>Part 6 · Ilana's Questions <span style="font-weight:400;font-size:10pt;color:var(--muted);">(5–10 min)</span></h2>
+<ol start="26">
+  <li><span class="q-lead">What questions do YOU have for me about this project?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">What should I be asking that I'm not asking?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+  <li><span class="q-lead">Is there anyone else we should talk to before building this?</span> <span class="q-follow">Other teachers, parents, kids?</span>
+    <div class="write-space"></div><div class="write-space"></div>
+  </li>
+</ol>
+
+<div class="footer-note">
+  WordPets · Ilana Interview Guide · 2026-04-14
+</div>
+
+</div>
+
+</body>
+</html>
