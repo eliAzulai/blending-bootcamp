@@ -80,12 +80,14 @@ echo "────────────────────────�
 assert_redacted "anthropic api key (api03)"   "key=sk-ant-api03-TESTREDACTME${RANDOM}TESTREDACTMETESTREDACTMETESTREDACTMEABCDEFG abc" "anthropic-key"
 assert_redacted "anthropic admin key"          "sk-ant-admin01-TESTREDACTMETESTREDACTMETESTREDACTMETESTREDACTMETESTREDACTME end" "anthropic-key"
 assert_redacted "openai project key"           "sk-proj-${_fx}${_fx}"  "openai-key"
-assert_redacted "openrouter key"               "OPENROUTER_API_KEY=sk-or-v1-$(printf '%064s' '' | tr ' ' 'a')" "openrouter-key"
+assert_redacted "openrouter key"               "auth: sk-or-v1-$(printf '%064s' '' | tr ' ' 'a') done" "openrouter-key"
 assert_redacted "github classic PAT (ghp)"     "token: ghp_${_fx}XX12 done" "github-token"
 assert_redacted "github fine-grained PAT"      "auth: github_pat_$(printf '%082s' '' | tr ' ' 'X') ok" "github-pat"
 assert_redacted "AWS access key id"            "AKIAIOSFODNN7EXAMPLE plus other stuff" "aws-access-key-id"
-assert_redacted "telegram bot token (kira)"   "ref: 8676917934:TESTREDACTMETESTREDACTMETESTREDA01 sent" "telegram-bot-token"
-assert_redacted "telegram bot token (marline)" "8471132694:TESTREDACTMETESTREDACTMETESTREDA02 followed" "telegram-bot-token"
+# Telegram bot tokens are EXACTLY 35 chars after the colon (per Telegram's docs and reference_telegram_bots.md memory).
+# These fixtures use 35-char synthetic suffixes to match the regex `\b\d{8,12}:[A-Za-z0-9_-]{35}\b`.
+assert_redacted "telegram bot token (kira)"   "ref: 8676917934:TESTREDACTMETESTREDACTMETESTREDA01X sent" "telegram-bot-token"
+assert_redacted "telegram bot token (marline)" "8471132694:TESTREDACTMETESTREDACTMETESTREDA02Y followed" "telegram-bot-token"
 assert_redacted "discord bot token (M-form)"  "Authorization: Bot ${_d1}.${_d2}.${_d3}" "discord-bot-token"
 assert_redacted "JWT (Supabase service role)" "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJURVNUUkVEQUNUTUUiLCJyb2xlIjoidGVzdCJ9.TESTREDACTMETESTREDACTMETESTREDACTME extra" "jwt"
 assert_redacted "slack bot token"              "${_sl1}-${_sl2}-${_sl3} end" "slack-token"
@@ -231,6 +233,103 @@ print(','.join(bad))
     FAIL_DETAILS+=("obj#4 enforcement: blocking preconditions contain || true: $BLOCKING_OR_TRUE")
     printf '  ✗ obj#4 enforcement: found blocking preconditions with `|| true`: %s\n' "$BLOCKING_OR_TRUE"
   fi
+fi
+
+echo
+echo "Pass 5 — claim-token.sh wrapper (Gap 3)"
+echo "─────────────────────────────────────────"
+
+CLAIM_TOKEN="$(dirname "$0")/../wrappers/claim-token.sh"
+if [[ -r "$CLAIM_TOKEN" ]]; then
+  TEST_CLAIMS_DIR=$(mktemp -d)
+  TEST_AUDIT_DIR=$(mktemp -d)
+
+  # Test: claim runs the wrapped command and returns its exit code
+  RESULT=$(OPENCLAW_TOKEN_CLAIMS_DIR="$TEST_CLAIMS_DIR" OPENCLAW_AUDIT_DIR="$TEST_AUDIT_DIR" \
+    bash "$CLAIM_TOKEN" t1 -- echo "wrapped-output" 2>/dev/null)
+  if [[ "$RESULT" == "wrapped-output" ]]; then
+    PASS=$((PASS + 1))
+    printf '  ✓ claim-token: wraps command and returns its stdout\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("claim-token wrapped-command output: expected 'wrapped-output', got '$RESULT'")
+    printf '  ✗ claim-token: wrapped command did not produce expected output\n'
+  fi
+
+  # Test: lockfile cleaned up after release (no stale file in claims dir)
+  REMAINING=$(ls -1 "$TEST_CLAIMS_DIR" 2>/dev/null | wc -l | tr -d ' ')
+  if [[ "$REMAINING" == "0" ]]; then
+    PASS=$((PASS + 1))
+    printf '  ✓ claim-token: lockfile cleaned up after normal release\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("claim-token left $REMAINING file(s) in claims dir after release")
+    printf '  ✗ claim-token: %s lockfile(s) leaked after release\n' "$REMAINING"
+  fi
+
+  # Test: audit log written with both claim and release events
+  AUDIT_FILE="$TEST_AUDIT_DIR/$(date +%Y-%m-%d).jsonl"
+  if [[ -f "$AUDIT_FILE" ]] && grep -q '"event": "claim"' "$AUDIT_FILE" && grep -q '"event": "release"' "$AUDIT_FILE"; then
+    PASS=$((PASS + 1))
+    printf '  ✓ claim-token: audit JSONL has both claim and release events\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("claim-token audit log missing claim/release events: $(cat "$AUDIT_FILE" 2>/dev/null)")
+    printf '  ✗ claim-token: audit log missing expected events\n'
+  fi
+
+  # Test: two-claim conflict — second claim refused with non-zero exit
+  rm -rf "$TEST_CLAIMS_DIR" "$TEST_AUDIT_DIR"
+  mkdir -p "$TEST_CLAIMS_DIR" "$TEST_AUDIT_DIR"
+  OPENCLAW_TOKEN_CLAIMS_DIR="$TEST_CLAIMS_DIR" OPENCLAW_AUDIT_DIR="$TEST_AUDIT_DIR" \
+    bash "$CLAIM_TOKEN" held -- sleep 2 &
+  HOLDER_PID=$!
+  sleep 0.3
+  CONFLICT_EXIT=0
+  CONFLICT_OUT=$(OPENCLAW_TOKEN_CLAIMS_DIR="$TEST_CLAIMS_DIR" OPENCLAW_AUDIT_DIR="$TEST_AUDIT_DIR" \
+    bash "$CLAIM_TOKEN" held -- echo "should-not-print" 2>&1) || CONFLICT_EXIT=$?
+  wait $HOLDER_PID 2>/dev/null
+  if [[ "$CONFLICT_EXIT" != "0" ]] && ! echo "$CONFLICT_OUT" | grep -q "should-not-print"; then
+    PASS=$((PASS + 1))
+    printf '  ✓ claim-token: concurrent claim refused with non-zero exit, wrapped command did NOT run\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("claim-token concurrent claim: exit=$CONFLICT_EXIT, output contained should-not-print: $(echo "$CONFLICT_OUT" | grep -c "should-not-print")")
+    printf '  ✗ claim-token: concurrent claim was NOT properly refused\n'
+  fi
+
+  # Test: stale-PID recovery — write a lockfile with a dead PID, verify next claim succeeds + audits the recovery
+  rm -rf "$TEST_CLAIMS_DIR" "$TEST_AUDIT_DIR"
+  mkdir -p "$TEST_CLAIMS_DIR"
+  echo "999999:fake-stale-ts:fake-comm:/tmp" > "$TEST_CLAIMS_DIR/stale.lock"
+  STALE_OUT=$(OPENCLAW_TOKEN_CLAIMS_DIR="$TEST_CLAIMS_DIR" OPENCLAW_AUDIT_DIR="$TEST_AUDIT_DIR" \
+    bash "$CLAIM_TOKEN" stale -- echo "recovered" 2>/dev/null)
+  AUDIT_FILE="$TEST_AUDIT_DIR/$(date +%Y-%m-%d).jsonl"
+  if [[ "$STALE_OUT" == "recovered" ]] && grep -q '"event": "stale_recovery"' "$AUDIT_FILE" 2>/dev/null; then
+    PASS=$((PASS + 1))
+    printf '  ✓ claim-token: stale-PID lock auto-recovered with audit event\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("claim-token stale recovery: out='$STALE_OUT' audit='$(cat "$AUDIT_FILE" 2>/dev/null)'")
+    printf '  ✗ claim-token: stale-PID recovery did not work as expected\n'
+  fi
+
+  # Test: --status with no claims says so cleanly
+  rm -rf "$TEST_CLAIMS_DIR"
+  STATUS_OUT=$(OPENCLAW_TOKEN_CLAIMS_DIR="$TEST_CLAIMS_DIR" OPENCLAW_AUDIT_DIR="$TEST_AUDIT_DIR" \
+    bash "$CLAIM_TOKEN" --status 2>/dev/null)
+  if echo "$STATUS_OUT" | grep -q "no claims"; then
+    PASS=$((PASS + 1))
+    printf '  ✓ claim-token: --status reports cleanly when no claims exist\n'
+  else
+    FAIL=$((FAIL + 1))
+    FAIL_DETAILS+=("claim-token --status with empty dir: '$STATUS_OUT'")
+    printf '  ✗ claim-token: --status produced unexpected output for empty case\n'
+  fi
+
+  rm -rf "$TEST_CLAIMS_DIR" "$TEST_AUDIT_DIR"
+else
+  printf '  ⚠ claim-token.sh not found at expected path; skipping Pass 5\n'
 fi
 
 echo

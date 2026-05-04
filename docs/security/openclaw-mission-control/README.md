@@ -30,6 +30,11 @@ Target directory for all four: `~/projects/config/` (alongside the existing `ope
 | `hooks/transcript-redact.sh` | `~/.claude/hooks/transcript-redact.sh` | PostToolUse hook — redacts secrets in just-written transcripts |
 | `hooks/test-patterns.sh` | (run in place from staging) | Self-test against synthetic secrets |
 
+### Wrappers (P1 — runtime command wrappers)
+| File | Target path | Purpose |
+|---|---|---|
+| `wrappers/claim-token.sh` | `~/.local/bin/claim-token.sh` | Token-uniqueness gate (Gap 3) — wraps any command that holds a Discord/Telegram/etc bot token; refuses concurrent claims |
+
 ## Deploy step (when ready, run from this directory)
 
 ```bash
@@ -46,6 +51,14 @@ mkdir -p ~/.local/bin ~/.claude/hooks
 cp hooks/redact-secrets.sh    ~/.local/bin/
 cp hooks/transcript-redact.sh ~/.claude/hooks/
 chmod 755 ~/.local/bin/redact-secrets.sh ~/.claude/hooks/transcript-redact.sh
+
+# Wrappers
+cp wrappers/claim-token.sh ~/.local/bin/
+chmod 755 ~/.local/bin/claim-token.sh
+
+# Pre-create the directories the wrappers + hooks expect at runtime
+mkdir -p ~/.openclaw/token-claims ~/.openclaw/audit
+chmod 700 ~/.openclaw/token-claims ~/.openclaw/audit
 
 # Smoke-test the redactor before wiring into settings.json
 bash hooks/test-patterns.sh
