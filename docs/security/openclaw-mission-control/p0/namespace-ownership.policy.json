@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-05-04",
+  "principles": [
+    "Each AI tool's home directory has exactly ONE owner.",
+    "No tool may auto-discover, auto-spawn, or auto-register from another tool's directory without explicit allowlist entry.",
+    "Cross-tool reads are allowed only when the reader is named in readers_allowed for that path.",
+    "Every protected directory carries a .no-auto-discovery sentinel as a low-cost signal to well-behaved tools (and a tripwire for the daily sentinel scan)."
+  ],
+  "owners": {
+    "~/.claude/": {
+      "owner": "claude-code",
+      "readers_allowed": [],
+      "notes": "User-level Claude Code config: skills, hooks, commands, plugins, projects/ (transcripts!), memory."
+    },
+    "~/.claude/plugins/": {
+      "owner": "claude-code",
+      "readers_allowed": [],
+      "auto_discovery_blocked": true,
+      "notes": "Apr 26-29 2026: Cursor's anysphere.cursor-mcp extension auto-scanned this dir, registered every plugin as a Cursor MCP server, and stacked 6 zombie bridge processes racing OpenClaw for the asterix Discord gateway. NEVER allow another tool to read this path."
+    },
+    "~/.claude/projects/": {
+      "owner": "claude-code",
+      "readers_allowed": [],
+      "notes": "Session transcripts live here. Contains historical secret leaks (per ROTATION-MAP.md). Treat as sensitive."
+    },
+    "~/.openclaw/": {
+      "owner": "openclaw",
+      "readers_allowed": [
+        { "tool": "mission-control", "mode": "read-only", "scope": ["audit/", "heartbeats.jsonl", "containment-register.json", "exec-approvals.json"] }
+      ],
+      "notes": "MC reads observability files only. MC may NEVER write here."
+    },
+    "~/.openclaw/token-claims/": {
+      "owner": "openclaw",
+      "readers_allowed": [
+        { "tool": "mission-control", "mode": "read-only", "scope": ["*.lock"] }
+      ],
+      "notes": "flock-managed lockfiles. MC referees but does not claim."
+    },
+    "~/.codex/": {
+      "owner": "codex-cli",
+      "readers_allowed": [],
+      "notes": "Session jsonl files contain historical secret leaks (~20 INFISICAL_CLIENT_SECRET hits per ROTATION-MAP.md). Sensitive."
+    },
+    "~/.hermes/": {
+      "owner": "hermes",
+      "readers_allowed": [],
+      "host_note": "Lives on m1book primarily. Mac-side may have a thin client config only."
+    },
+    "~/.cursor/": {
+      "owner": "cursor",
+      "readers_allowed": [],
+      "outbound_scans_blocked": [
+        "~/.claude/",
+        "~/.claude/plugins/",
+        "~/.openclaw/",
+        "~/.codex/",
+        "~/.hermes/"
+      ],
+      "notes": "Cursor's built-in cursor-mcp extension was quarantined 2026-04-29 to ~/security-incident-2026-04-29/quarantine-cursor-mcp/cursor-mcp-app-bundle/. Cursor app updates will reinstall it — see daily_sentinel checks below."
+    },
+    "/Applications/Cursor.app/Contents/Resources/app/extensions/cursor-mcp": {
+      "owner": "quarantined",
+      "expected_state": "absent",
+      "auto_action_on_reappearance": "re-quarantine to ~/security-incident-2026-04-29/quarantine-cursor-mcp/cursor-mcp-app-bundle-<timestamp>/ AND alert",
+      "notes": "Cursor's auto-discovery feature lives here. App updates restore it. A launchd watch on this path is the right enforcement."
+    }
+  },
+  "sentinel": {
+    "filename": ".no-auto-discovery",
+    "deploy_to": [
+      "~/.claude/plugins/",
+      "~/.openclaw/",
+      "~/.codex/",
+      "~/.hermes/"
+    ],
+    "contents": "This directory is owned by a single tool. Other AI tools must NOT auto-discover, auto-register, or spawn processes from contents here. See ~/projects/config/namespace-ownership.policy.json."
+  },
+  "daily_sentinel_checks": [
+    {
+      "id": "cursor-mcp-extension-restored",
+      "command": "test ! -d /Applications/Cursor.app/Contents/Resources/app/extensions/cursor-mcp",
+      "on_fail": "alert + auto-re-quarantine",
+      "frequency": "daily + on-cursor-update"
+    },
+    {
+      "id": "discord-plugin-restored",
+      "command": "test ! -d ~/.claude/plugins/cache/claude-plugins-official/discord/0.0.4",
+      "on_fail": "rename to 0.0.4-disabled-by-eli<N> + alert",
+      "frequency": "daily + on-claude-code-plugin-sync"
+    },
+    {
+      "id": "no-foreign-process-in-claude-plugins",
+      "command": "lsof +D ~/.claude/plugins 2>/dev/null | awk 'NR>1 && $1 != \"claude\" && $1 != \"node\" {print}' | wc -l | grep -q '^0$'",
+      "on_fail": "alert with lsof output — list every foreign process touching the dir",
+      "frequency": "every 30 min via launchd"
+    },
+    {
+      "id": "no-cursor-mcp-bridge-process",
+      "command": "! pgrep -f 'claude-plugins-official/discord' >/dev/null",
+      "on_fail": "alert + kill matching PIDs",
+      "frequency": "every 30 min"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-05-04",
+  "principles": [
+    "Bots NEVER bind to personal accounts. Period. No exceptions.",
+    "Each bot identity must be on a dedicated SIM, dedicated email, dedicated Discord/Slack workspace.",
+    "Identity binding requires written rationale + 7-day cooling-off review before going live.",
+    "Auto-reply to non-allowlisted DMs defaults to silent_ignore — NEVER emit pairing codes, verification codes, or any token to a human without explicit per-message approval.",
+    "If a bot's bound identity is permanently entangled with personal identity (phone-number-based channels like WhatsApp/iMessage), the channel is permanently disqualified for bot use until the entanglement is broken (separate SIM / separate Apple ID)."
+  ],
+  "personal_identities_quarantined": {
+    "_comment": "These identifiers belong to the human operator. NO agent may bind to or send AS these.",
+    "phone_numbers": ["+972549961347"],
+    "emails": ["yaneccles@gmail.com"],
+    "discord_user_ids": [],
+    "telegram_user_ids": [],
+    "whatsapp_jids": ["972549961347@s.whatsapp.net"]
+  },
+  "bot_identities_allowed": {
+    "marline_telegram": {
+      "id": "8471132694",
+      "username": "@Marline_family_bot",
+      "kind": "telegram_bot",
+      "host": "hetzner",
+      "human_role": "family-PA",
+      "infisical": "marline/prod -> TELEGRAM_BOT_TOKEN",
+      "consumer_config": "/home/marline/.openclaw/openclaw.json",
+      "rotated_at": "2026-04-30",
+      "channel_enabled": false,
+      "notes": "Channel currently disabled; re-enable gated by containment-register entry."
+    },
+    "kira_telegram": {
+      "id": "8676917934",
+      "username": "@Kira_Note_bot",
+      "displayName": "⚔️ Asterix",
+      "kind": "telegram_bot",
+      "host": "mac",
+      "human_role": "ops-assistant",
+      "infisical": "shared/prod -> TELEGRAM_BOT_TOKEN_KIRA",
+      "consumer_config": "~/.openclaw/openclaw.json + ~/.openclaw/workspace/scripts/gateway-watchdog.sh",
+      "rotated_at": "2026-04-30",
+      "channel_enabled": false,
+      "notes": "Channel currently disabled; env-hydration wrapper rebuild required first."
+    },
+    "asterix_discord": {
+      "id": "1488514091420225676",
+      "displayName": "asterix",
+      "kind": "discord_bot",
+      "host": "mac",
+      "human_role": "dev-engineer",
+      "consumer": "OpenClaw Mac gateway (ai.openclaw.gateway launchd)",
+      "infisical": "shared/prod -> DISCORD_BOT_TOKEN",
+      "rotated_at": "2026-04-30",
+      "channel_enabled": true,
+      "notes": "Single-claim guarded after Cursor MCP hijack. See namespace-ownership.policy.json for outbound-scan ban."
+    },
+    "claudecode_discord": {
+      "id": "<TODO-fill-from-reference_discord_bots>",
+      "kind": "discord_bot",
+      "host": "mac",
+      "human_role": "session-channel",
+      "infisical": "shared/prod -> DISCORD_TOKEN",
+      "rotated_at": "2026-04-30",
+      "channel_enabled": true
+    }
+  },
+  "deny_bind": [
+    {
+      "kind": "whatsapp",
+      "scope": "any agent on any host",
+      "reason": "WhatsApp identity is phone-number-bound; impossible to separate from personal identity without a dedicated SIM. Apr 28 2026 incident: bot attached to +972549961347 with dmPolicy=allowlist auto-replied with pairing codes (PTUKVDSL, ERYXT5QX) to two real human contacts (Chana Flam, Herschel) who looked like phishing.",
+      "lifted_when": "Dedicated SIM acquired AND new WhatsApp account registered to that SIM AND verified that all personal contacts have been notified the new number is a bot.",
+      "added": "2026-04-29"
+    },
+    {
+      "kind": "imessage",
+      "scope": "any agent on any host",
+      "reason": "iMessage identity is Apple-ID-bound. Same risk shape as WhatsApp.",
+      "lifted_when": "Dedicated Apple ID created AND verified separate from personal Apple ID's iCloud / Find My / Photos / etc.",
+      "added": "2026-04-29"
+    }
+  ],
+  "auto_reply_defaults": {
+    "non_allowlisted_dm": "silent_ignore",
+    "_comment": "OpenClaw's pairing flow was the proximate cause of the Apr 28 incident. Default behavior must be to drop unknown-sender messages, not auto-respond."
+  },
+  "ask_before_emitting": {
+    "_comment": "Any message containing these patterns to a HUMAN identity (not a bot identity) requires per-message approval, even for the publisher role.",
+    "patterns": [
+      "pairing_code",
+      "verification_code",
+      "token",
+      "secret",
+      "password",
+      "api_key",
+      "/^[A-Z0-9]{6,12}$/ when sent as standalone message body (matches PTUKVDSL/ERYXT5QX shape)"
+    ]
+  },
+  "audit": {
+    "log_every_bind_attempt": true,
+    "log_every_send_to_human": true,
+    "alert_on": [
+      "any bot attempting to bind a personal_identities_quarantined identifier",
+      "any send matching ask_before_emitting.patterns that wasn't explicitly approved",
+      "any deny_bind kind being attempted (regardless of identity)"
+    ]
+  }
+}

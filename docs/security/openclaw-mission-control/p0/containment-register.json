@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-05-04",
+  "principle": "Any feature disabled for security reasons gets a checklist of preconditions before re-enable. Mission Control surfaces these as persistent banner items. Re-enable requires all preconditions returning status: ok and writes a 'lifted from containment' audit event.",
+  "disabled_features": [
+    {
+      "id": "mac-openclaw-telegram-kira-channel",
+      "feature": "Mac OpenClaw Telegram channel (Kira_Note_bot)",
+      "disabled_at": "2026-04-29T20:18:00+03:00",
+      "disabled_by": "incident response (claude code)",
+      "incident": "security-incident-2026-04-29",
+      "reason": "Env-hydration wrapper ai.openclaw.gateway.env.plist (15-min refresh) called ~/.openclaw/openclaw-gateway-start.sh --env-only, which had embedded credential paths. Wrapper disabled with explicit error 'Disabled during OpenClaw incident containment on 2026-04-29. Use the LaunchAgent plist or rebuild this wrapper without embedded credentials.'",
+      "current_state": "channels.telegram.enabled=false in ~/.openclaw/openclaw.json",
+      "preconditions": [
+        {
+          "id": "wrapper-rebuilt",
+          "description": "openclaw-gateway-start.sh exists and does NOT contain the disabled-during-incident error",
+          "check": "test -x ~/.openclaw/openclaw-gateway-start.sh && ! grep -q 'Disabled during' ~/.openclaw/openclaw-gateway-start.sh",
+          "status": "pending"
+        },
+        {
+          "id": "creds-from-keychain-not-files",
+          "description": "Wrapper reads creds via security find-generic-password, NOT via sourcing a credential file with embedded values",
+          "check": "grep -q 'security find-generic-password' ~/.openclaw/openclaw-gateway-start.sh && ! grep -qE '^(source|\\.) .*creds.env' ~/.openclaw/openclaw-gateway-start.sh",
+          "status": "pending"
+        },
+        {
+          "id": "token-claim-lockfile-in-place",
+          "description": "Token-uniqueness gate exists for kira-telegram (Gap 3, P0)",
+          "check": "test -d ~/.openclaw/token-claims && ls ~/.openclaw/token-claims/kira-telegram.lock 2>/dev/null || true",
+          "status": "pending"
+        },
+        {
+          "id": "audit-tail-clean",
+          "description": "No SIGTERM/restart pattern in last 24h gateway.log (rules out the watchdog loop pattern)",
+          "check": "! grep -q 'Gateway down' ~/.openclaw/workspace/scripts/watchdog.log 2>/dev/null || [ $(grep 'Gateway down' /tmp/openclaw/watchdog.log 2>/dev/null | awk -v cutoff=\"$(date -v-24H +%Y-%m-%d)\" '$0 >= cutoff' | wc -l) -eq 0 ]",
+          "status": "pending"
+        }
+      ],
+      "owner": "eli",
+      "linked_memory": "reference_telegram_bots.md",
+      "linked_credential": "TELEGRAM_BOT_TOKEN_KIRA"
+    },
+    {
+      "id": "hetzner-openclaw-telegram-marline-channel",
+      "feature": "Hetzner OpenClaw Telegram channel (Marline_family_bot)",
+      "disabled_at": "2026-04-30",
+      "disabled_by": "incident response — token rotation",
+      "incident": "security-incident-2026-04-29",
+      "reason": "Channel set to enabled:false during rotation; not yet flipped back",
+      "current_state": "channels.telegram.enabled=false in /home/marline/.openclaw/openclaw.json",
+      "preconditions": [
+        {
+          "id": "post-rotation-getme-ok",
+          "description": "New token validates via getMe and returns expected bot_id",
+          "check": "ssh hetzner 'curl -sf https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getMe | jq -e \".ok and .result.id == 8471132694\"'",
+          "status": "pending"
+        },
+        {
+          "id": "channel-config-uses-ref-not-literal",
+          "description": "openclaw.json references ${TELEGRAM_BOT_TOKEN}, not the literal token value",
+          "check": "ssh hetzner 'grep -q \"\\\\${TELEGRAM_BOT_TOKEN}\" /home/marline/.openclaw/openclaw.json && ! grep -qE \"\\\"botToken\\\":\\\\s*\\\"[0-9]+:\" /home/marline/.openclaw/openclaw.json'",
+          "status": "pending"
+        }
+      ],
+      "owner": "eli",
+      "linked_credential": "TELEGRAM_BOT_TOKEN"
+    },
+    {
+      "id": "openclaw-watchdog",
+      "feature": "OpenClaw gateway watchdog (Mac)",
+      "disabled_at": "2026-04-29T16:35:00+03:00",
+      "disabled_by": "incident response — caused SIGTERM/restart loop",
+      "incident": "security-incident-2026-04-29",
+      "reason": "5-second curl timeout in gateway_is_healthy() can't accommodate 30-45s startup with discord+telegram. SIGTERM/restart loop triggered 5+ plugin reinstall fan-outs in 30 minutes (2026-04-25 22:27-22:55).",
+      "current_state": "launchctl bootout — not running",
+      "preconditions": [
+        {
+          "id": "tolerance-raised",
+          "description": "TIMEOUT_SECONDS in watchdog script raised to ≥60",
+          "check": "grep -E '^TIMEOUT_SECONDS=' ~/.openclaw/workspace/scripts/gateway-watchdog.sh | awk -F= '{exit ($2 < 60)}'",
+          "status": "pending"
+        },
+        {
+          "id": "startup-grace-added",
+          "description": "Watchdog has STARTUP_GRACE_SECONDS=60+ that suppresses checks immediately after a (re)start",
+          "check": "grep -qE '^STARTUP_GRACE_SECONDS=([6-9][0-9]|[1-9][0-9]{2,})' ~/.openclaw/workspace/scripts/gateway-watchdog.sh",
+          "status": "pending"
+        },
+        {
+          "id": "liveness-not-readiness",
+          "description": "Watchdog checks liveness (process exists, port bound) BEFORE readiness (full plugin load)",
+          "check": "manual review — no automated check",
+          "status": "pending"
+        },
+        {
+          "id": "back-off-bounded",
+          "description": "Restart attempts have bounded back-off (e.g. exponential up to 1h) and a max-attempts circuit breaker",
+          "check": "grep -qE '(BACKOFF|MAX_RESTART_ATTEMPTS)' ~/.openclaw/workspace/scripts/gateway-watchdog.sh",
+          "status": "pending"
+        }
+      ],
+      "owner": "eli",
+      "notes": "This is an ops-correctness item, not a security item — but it AMPLIFIED the security problem by triggering plugin re-install fan-outs that gave Cursor's hijack more surface area to race against. Don't re-enable until all four preconditions pass."
+    },
+    {
+      "id": "openclaw-whatsapp-channel",
+      "feature": "OpenClaw WhatsApp channel (any host)",
+      "disabled_at": "2026-04-29T20:07:00+03:00",
+      "disabled_by": "incident response — pairing-code blast to real contacts",
+      "incident": "security-incident-2026-04-29",
+      "reason": "Bot was attached to user's personal WhatsApp number (+972549961347) with dmPolicy=allowlist. On 2026-04-28 20:25-20:28 Israel time, two real contacts (Chana Flam, Herschel) DM'd the user. Bot auto-replied with pairing codes (PTUKVDSL, ERYXT5QX) that looked like phishing from the user's number.",
+      "current_state": "channels.whatsapp removed from ~/.openclaw/openclaw.json. whatsapp-pairing.json, whatsapp-default-allowFrom.json, whatsapp/ subdir quarantined to ~/security-incident-2026-04-29/quarantine-whatsapp-unlink/. Baileys protocol state in ~/openclaw-incident-backups/20260429-162619/quarantine/whatsapp/default/ (1970 files, kept as forensic evidence).",
+      "preconditions": [
+        {
+          "id": "dedicated-sim-acquired",
+          "description": "User has acquired a separate physical SIM dedicated to bot use (not personal number)",
+          "check": "manual confirmation — no automated check",
+          "status": "pending",
+          "blocking_reason": "PERMANENT until met. Per channel-identity.policy.json deny_bind."
+        },
+        {
+          "id": "new-whatsapp-account-on-dedicated-sim",
+          "description": "New WhatsApp account registered to the dedicated SIM, NOT migrated from personal",
+          "check": "manual",
+          "status": "pending"
+        },
+        {
+          "id": "personal-whatsapp-session-revoked",
+          "description": "User has manually revoked any cached WhatsApp Web session by going to phone Settings > Linked Devices > Log Out",
+          "check": "manual",
+          "status": "pending"
+        },
+        {
+          "id": "personal-contacts-notified",
+          "description": "User has personally explained to Chana Flam and Herschel that the codes were a misconfigured bot, not a hijack",
+          "check": "manual — user-action item, not bot-action",
+          "status": "pending"
+        },
+        {
+          "id": "auto-reply-default-changed",
+          "description": "Default for non-allowlisted DMs is silent_ignore, NOT pairing-code emission (per channel-identity.policy.json)",
+          "check": "grep -q '\"auto_reply_default\": *\"silent_ignore\"' ~/projects/config/channel-identity.policy.json",
+          "status": "pending"
+        }
+      ],
+      "owner": "eli",
+      "notes": "PERMANENT containment until ALL preconditions met. Specifically blocks any code path that would re-add channels.whatsapp to openclaw.json with the personal number."
+    },
+    {
+      "id": "claude-code-discord-plugin",
+      "feature": "Claude Code Discord plugin (~/.claude/plugins/cache/claude-plugins-official/discord/)",
+      "disabled_at": "2026-04-29T15:54:00+03:00",
+      "disabled_by": "incident response — Cursor MCP hijack",
+      "incident": "security-incident-2026-04-29",
+      "reason": "Cursor's anysphere.cursor-mcp extension auto-discovered this plugin and stacked 6 zombie bridge processes racing OpenClaw for the asterix Discord gateway slot.",
+      "current_state": "Plugin dir renamed to 0.0.4-disabled-by-eli2. Cursor MCP extension separately quarantined.",
+      "preconditions": [
+        {
+          "id": "cursor-mcp-extension-stays-quarantined",
+          "description": "/Applications/Cursor.app/Contents/Resources/app/extensions/cursor-mcp does not exist",
+          "check": "test ! -d /Applications/Cursor.app/Contents/Resources/app/extensions/cursor-mcp",
+          "status": "ok"
+        },
+        {
+          "id": "different-bot-token-if-claude-code-needs-discord",
+          "description": "If Claude Code needs Discord, it MUST use a different bot token than asterix (otherwise gateway race returns)",
+          "check": "manual",
+          "status": "pending"
+        },
+        {
+          "id": "namespace-sentinel-active",
+          "description": "Daily sentinel scan from namespace-ownership.policy.json is running and would catch any reappearance",
+          "check": "launchctl list | grep -q com.eliazulai.namespace-sentinel",
+          "status": "pending"
+        }
+      ],
+      "owner": "eli",
+      "notes": "User does NOT consume asterix from Claude Code. This plugin can stay disabled indefinitely. Listed here so that a future re-enable attempt is gated."
+    },
+    {
+      "id": "cursor-mcp-extension",
+      "feature": "Cursor's anysphere.cursor-mcp built-in extension",
+      "disabled_at": "2026-04-29T20:18:00+03:00",
+      "disabled_by": "incident response",
+      "incident": "security-incident-2026-04-29",
+      "reason": "Auto-discovered Claude Code's plugin dir without consent and spawned MCP bridges. Two MCP-capable tools sharing one machine's plugin folder is a footgun.",
+      "current_state": "/Applications/Cursor.app/Contents/Resources/app/extensions/cursor-mcp moved to ~/security-incident-2026-04-29/quarantine-cursor-mcp/cursor-mcp-app-bundle/. Quarantined ~/.cursor/projects/*/mcps/plugin-discord-discord/ stale entries also moved.",
+      "preconditions": [
+        {
+          "id": "cursor-disables-mcp-from-plugins-feature",
+          "description": "Cursor releases an opt-out toggle for cursor-mcp's plugin auto-discovery",
+          "check": "manual — depends on Cursor product change",
+          "status": "pending",
+          "blocking_reason": "PERMANENT until Cursor adds opt-out. Treat as 'staying quarantined indefinitely'."
+        }
+      ],
+      "owner": "eli",
+      "notes": "Cursor app updates will reinstall this extension automatically. namespace-ownership.policy.json daily_sentinel_checks include 'cursor-mcp-extension-restored' which auto-re-quarantines and alerts.",
+      "auto_re_quarantine_on_reappear": true
+    }
+  ],
+  "audit": {
+    "log_re_enable_attempt": true,
+    "log_precondition_check_failure": true,
+    "alert_on_re_enable_with_pending_preconditions": "BLOCK"
+  }
+}
