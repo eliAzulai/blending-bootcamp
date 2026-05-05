@@ -1,57 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { signupTeacherAction } from "./actions";
 
 export default function TeacherSignupPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  function handleSubmit(formData: FormData) {
     setError("");
-
-    const supabase = createClient();
-
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (authData.user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({ id: authData.user.id, role: "teacher", name });
-
-      if (profileError) {
-        setError(profileError.message);
-        setLoading(false);
-        return;
+    startTransition(async () => {
+      const result = await signupTeacherAction(formData);
+      if (result?.error) {
+        setError(result.error);
       }
-
-      // Hard navigation so AuthProvider remounts with fresh session + profile.
-      // router.push hits stale AuthProvider state and TeacherLayout bounces to /login.
-      window.location.href = "/teacher";
-      return;
-    }
-
-    setLoading(false);
+    });
   }
 
   return (
@@ -64,28 +28,25 @@ export default function TeacherSignupPage() {
           Create your WordPets teacher account
         </p>
 
-        <form onSubmit={handleSignup} className="flex flex-col gap-4">
+        <form action={handleSubmit} className="flex flex-col gap-4">
           <input
             type="text"
+            name="name"
             placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
             required
             className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
           />
           <input
             type="email"
+            name="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             required
             className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
           />
           <input
             type="password"
+            name="password"
             placeholder="Password (min 6 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
             className="rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none transition-colors focus:border-purple-400"
@@ -99,10 +60,10 @@ export default function TeacherSignupPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={pending}
             className="rounded-xl bg-purple-600 px-6 py-3 text-lg font-bold text-white shadow-md transition-all hover:bg-purple-700 active:scale-95 disabled:opacity-50"
           >
-            {loading ? "Creating account..." : "Create Teacher Account"}
+            {pending ? "Creating account..." : "Create Teacher Account"}
           </button>
         </form>
 
