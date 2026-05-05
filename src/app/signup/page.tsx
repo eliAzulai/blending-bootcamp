@@ -45,8 +45,10 @@ export default function TeacherSignupPage() {
         return;
       }
 
-      router.push("/teacher");
-      router.refresh();
+      // Hard navigation so AuthProvider remounts with fresh session + profile.
+      // router.push hits stale AuthProvider state and TeacherLayout bounces to /login.
+      window.location.href = "/teacher";
+      return;
     }
 
     setLoading(false);

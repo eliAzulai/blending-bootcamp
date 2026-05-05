@@ -46,12 +46,8 @@ export default function LoginPage() {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role === "teacher") {
-      router.push("/teacher");
-    } else {
-      router.push("/student");
-    }
-    router.refresh();
+    // Hard navigation so AuthProvider remounts with fresh session.
+    window.location.href = profile?.role === "teacher" ? "/teacher" : "/student";
   }
 
   return (
