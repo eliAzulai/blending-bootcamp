@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useTransition } from "react";
+import {
+  toggleFocusAreaAction,
+  setDifficultyAction,
+} from "@/app/teacher/students/[id]/actions";
 import {
   ALL_FOCUS_AREAS,
   FOCUS_AREA_LABELS,
@@ -15,57 +18,26 @@ const DIFFICULTIES: DifficultyLevel[] = ["beginner", "intermediate", "advanced"]
 interface FocusAreaToggleProps {
   studentId: string;
   focusAreas: FocusArea[];
-  onUpdate: () => void;
 }
 
 export default function FocusAreaToggle({
   studentId,
   focusAreas,
-  onUpdate,
 }: FocusAreaToggleProps) {
-  const [saving, setSaving] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   const areaMap = new Map(focusAreas.map((fa) => [fa.area, fa]));
 
-  async function toggleArea(area: FocusAreaType) {
-    setSaving(true);
-    const supabase = createClient();
-    const existing = areaMap.get(area);
-
-    if (existing) {
-      await supabase
-        .from("focus_areas")
-        .update({ active: !existing.active })
-        .eq("id", existing.id);
-    } else {
-      await supabase.from("focus_areas").insert({
-        student_id: studentId,
-        area,
-        difficulty: "beginner",
-        active: true,
-      });
-    }
-
-    setSaving(false);
-    onUpdate();
+  function toggleArea(area: FocusAreaType) {
+    startTransition(() => toggleFocusAreaAction(studentId, area));
   }
 
-  async function changeDifficulty(area: FocusAreaType, difficulty: DifficultyLevel) {
-    const existing = areaMap.get(area);
-    if (!existing) return;
-
-    setSaving(true);
-    const supabase = createClient();
-    await supabase
-      .from("focus_areas")
-      .update({ difficulty })
-      .eq("id", existing.id);
-    setSaving(false);
-    onUpdate();
+  function changeDifficulty(area: FocusAreaType, difficulty: DifficultyLevel) {
+    startTransition(() => setDifficultyAction(studentId, area, difficulty));
   }
 
   return (
-    <div className={`space-y-3 ${saving ? "opacity-60" : ""}`}>
+    <div className={`space-y-3 ${pending ? "opacity-60" : ""}`}>
       <h3 className="text-sm font-semibold text-gray-700">Focus Areas</h3>
       <div className="flex flex-wrap gap-2">
         {ALL_FOCUS_AREAS.map((area) => {
