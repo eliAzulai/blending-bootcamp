@@ -22,9 +22,18 @@ export default function AddStudentPage() {
   }
 
   async function copyLink() {
-    await navigator.clipboard.writeText(inviteLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API blocked (iframe / no user-activation / insecure context).
+      // Fall back to selecting the text so the user can copy manually.
+      const input = document.querySelector<HTMLInputElement>(
+        'input[readonly][value="' + inviteLink + '"]',
+      );
+      input?.select();
+    }
   }
 
   function reset() {
