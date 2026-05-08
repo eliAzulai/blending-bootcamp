@@ -1,22 +1,25 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSessionTracker } from "@/lib/tracker";
 import PhonicsActivity from "@/components/activities/PhonicsActivity";
 import SpellingActivity from "@/components/activities/SpellingActivity";
 import ReadAloudActivity from "@/components/activities/ReadAloudActivity";
 import PetDisplay from "@/components/PetDisplay";
-import {
-  getDefaultPhonicsContent,
-  getDefaultSpellingContent,
-  getDefaultReadAloudPassage,
+import type {
+  PhonicsContent,
+  SpellingContent,
+  ReadAloudPassage,
 } from "@/lib/fixtures/student";
 import type { Student, FocusAreaType } from "@/types/database";
 
 interface PracticeRunnerProps {
   student: Student;
   activities: FocusAreaType[];
+  phonicsContent: PhonicsContent;
+  spellingContent: SpellingContent;
+  readAloudPassage: ReadAloudPassage;
 }
 
 type PageState = "activity" | "complete";
@@ -24,6 +27,9 @@ type PageState = "activity" | "complete";
 export default function PracticeRunner({
   student,
   activities,
+  phonicsContent,
+  spellingContent,
+  readAloudPassage,
 }: PracticeRunnerProps) {
   const router = useRouter();
 
@@ -33,10 +39,6 @@ export default function PracticeRunner({
   const [totalDuration, setTotalDuration] = useState(0);
 
   const trackerRef = useRef(createSessionTracker(student.id));
-
-  const phonicsContent = useMemo(() => getDefaultPhonicsContent(), []);
-  const spellingContent = useMemo(() => getDefaultSpellingContent(), []);
-  const readAloudPassage = useMemo(() => getDefaultReadAloudPassage(), []);
 
   const handleActivityComplete = useCallback(
     async (result: { coinsEarned?: number; durationSeconds?: number }) => {

@@ -1,7 +1,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PracticeRunner from "./PracticeRunner";
-import type { Student, FocusAreaType } from "@/types/database";
+import {
+  pickPhonicsContent,
+  pickSpellingContent,
+  pickReadAloudPassage,
+} from "@/lib/fixtures/student";
+import type {
+  Student,
+  FocusAreaType,
+  DifficultyLevel,
+} from "@/types/database";
 
 export default async function PracticePage() {
   const supabase = await createClient();
@@ -21,20 +30,50 @@ export default async function PracticePage() {
 
   const student = studentData as Student;
 
+  // Fetch focus areas with their difficulty
   const { data: focusData } = await supabase
     .from("focus_areas")
-    .select("area")
+    .select("area, difficulty, active")
     .eq("student_id", student.id)
     .eq("active", true);
 
-  const order: FocusAreaType[] = ["phonics", "spelling", "read_aloud"];
-  const activeAreas = new Set(
-    (focusData ?? []).map((f: { area: FocusAreaType }) => f.area),
+  type FocusRow = { area: FocusAreaType; difficulty: DifficultyLevel };
+  const focusMap = new Map<FocusAreaType, DifficultyLevel>(
+    ((focusData ?? []) as FocusRow[]).map((f) => [f.area, f.difficulty]),
   );
 
-  const activities = activeAreas.size > 0
-    ? order.filter((a) => activeAreas.has(a))
+  const order: FocusAreaType[] = ["phonics", "spelling", "read_aloud"];
+  const activities = focusMap.size > 0
+    ? order.filter((a) => focusMap.has(a))
     : order;
 
-  return <PracticeRunner student={student} activities={activities} />;
+  // Count completed sessions for content rotation. New students see set 0,
+  // after their first completed session they see set 1, etc.
+  const { count: completedCount } = await supabase
+    .from("practice_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", student.id)
+    .eq("completed", true);
+
+  const rotation = completedCount ?? 0;
+
+  // Pre-pick the content for each activity on the server so the runner
+  // doesn't need to call any fixture-lookup logic.
+  const phonicsDifficulty = focusMap.get("phonics") ?? "beginner";
+  const spellingDifficulty = focusMap.get("spelling") ?? "beginner";
+  const readAloudDifficulty = focusMap.get("read_aloud") ?? "beginner";
+
+  const phonicsContent = pickPhonicsContent(phonicsDifficulty, rotation);
+  const spellingContent = pickSpellingContent(spellingDifficulty, rotation);
+  const readAloudPassage = pickReadAloudPassage(readAloudDifficulty, rotation);
+
+  return (
+    <PracticeRunner
+      student={student}
+      activities={activities}
+      phonicsContent={phonicsContent}
+      spellingContent={spellingContent}
+      readAloudPassage={readAloudPassage}
+    />
+  );
 }
