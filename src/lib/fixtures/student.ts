@@ -1,4 +1,4 @@
-import type { Student } from "@/types/database";
+import type { Student, DifficultyLevel } from "@/types/database";
 
 export const FIXTURE_STUDENT_ID = "fixture-student-1";
 
@@ -23,32 +23,176 @@ export interface PhonicsWord {
 export interface PhonicsContent {
   id: string;
   title: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
+  difficulty: DifficultyLevel;
   words: PhonicsWord[];
 }
 
+/**
+ * Phonics content organized by difficulty.
+ * Beginner: CVC short vowels (each vowel = one set)
+ * Intermediate: CCVC blends, CVCC blends, digraphs
+ * Advanced: longer words, mixed patterns
+ */
 export const fixturePhonicsContent: PhonicsContent[] = [
+  // BEGINNER — CVC by short vowel
   {
-    id: "phonics-cvc-at",
-    title: "Short A: -at family",
+    id: "phonics-cvc-short-a",
+    title: "Short A Words",
     difficulty: "beginner",
     words: [
       { word: "cat", phonemes: ["c", "a", "t"] },
-      { word: "sat", phonemes: ["s", "a", "t"] },
-      { word: "mat", phonemes: ["m", "a", "t"] },
       { word: "hat", phonemes: ["h", "a", "t"] },
+      { word: "mat", phonemes: ["m", "a", "t"] },
       { word: "bat", phonemes: ["b", "a", "t"] },
+      { word: "pan", phonemes: ["p", "a", "n"] },
+      { word: "man", phonemes: ["m", "a", "n"] },
     ],
   },
   {
-    id: "phonics-cvc-it",
-    title: "Short I: -it family",
+    id: "phonics-cvc-short-i",
+    title: "Short I Words",
     difficulty: "beginner",
     words: [
       { word: "sit", phonemes: ["s", "i", "t"] },
-      { word: "hit", phonemes: ["h", "i", "t"] },
-      { word: "fit", phonemes: ["f", "i", "t"] },
-      { word: "pit", phonemes: ["p", "i", "t"] },
+      { word: "pig", phonemes: ["p", "i", "g"] },
+      { word: "big", phonemes: ["b", "i", "g"] },
+      { word: "win", phonemes: ["w", "i", "n"] },
+      { word: "lip", phonemes: ["l", "i", "p"] },
+      { word: "kid", phonemes: ["k", "i", "d"] },
+    ],
+  },
+  {
+    id: "phonics-cvc-short-o",
+    title: "Short O Words",
+    difficulty: "beginner",
+    words: [
+      { word: "hop", phonemes: ["h", "o", "p"] },
+      { word: "top", phonemes: ["t", "o", "p"] },
+      { word: "dog", phonemes: ["d", "o", "g"] },
+      { word: "hot", phonemes: ["h", "o", "t"] },
+      { word: "fox", phonemes: ["f", "o", "x"] },
+      { word: "pot", phonemes: ["p", "o", "t"] },
+    ],
+  },
+  {
+    id: "phonics-cvc-short-u",
+    title: "Short U Words",
+    difficulty: "beginner",
+    words: [
+      { word: "cup", phonemes: ["c", "u", "p"] },
+      { word: "sun", phonemes: ["s", "u", "n"] },
+      { word: "run", phonemes: ["r", "u", "n"] },
+      { word: "bug", phonemes: ["b", "u", "g"] },
+      { word: "hug", phonemes: ["h", "u", "g"] },
+      { word: "mud", phonemes: ["m", "u", "d"] },
+    ],
+  },
+  {
+    id: "phonics-cvc-short-e",
+    title: "Short E Words",
+    difficulty: "beginner",
+    words: [
+      { word: "bed", phonemes: ["b", "e", "d"] },
+      { word: "red", phonemes: ["r", "e", "d"] },
+      { word: "pet", phonemes: ["p", "e", "t"] },
+      { word: "wet", phonemes: ["w", "e", "t"] },
+      { word: "hen", phonemes: ["h", "e", "n"] },
+      { word: "ten", phonemes: ["t", "e", "n"] },
+    ],
+  },
+  {
+    id: "phonics-cvc-mixed",
+    title: "Mixed Short Vowels",
+    difficulty: "beginner",
+    words: [
+      { word: "fan", phonemes: ["f", "a", "n"] },
+      { word: "tin", phonemes: ["t", "i", "n"] },
+      { word: "log", phonemes: ["l", "o", "g"] },
+      { word: "jug", phonemes: ["j", "u", "g"] },
+      { word: "net", phonemes: ["n", "e", "t"] },
+      { word: "rat", phonemes: ["r", "a", "t"] },
+    ],
+  },
+
+  // INTERMEDIATE — beginning blends, ending blends, digraphs
+  {
+    id: "phonics-beg-blends",
+    title: "Beginning Blends (st, tr, dr)",
+    difficulty: "intermediate",
+    words: [
+      { word: "stop", phonemes: ["s", "t", "o", "p"] },
+      { word: "trip", phonemes: ["t", "r", "i", "p"] },
+      { word: "drop", phonemes: ["d", "r", "o", "p"] },
+      { word: "frog", phonemes: ["f", "r", "o", "g"] },
+      { word: "plug", phonemes: ["p", "l", "u", "g"] },
+      { word: "swim", phonemes: ["s", "w", "i", "m"] },
+    ],
+  },
+  {
+    id: "phonics-end-blends",
+    title: "Ending Blends (mp, st, nd)",
+    difficulty: "intermediate",
+    words: [
+      { word: "jump", phonemes: ["j", "u", "m", "p"] },
+      { word: "lamp", phonemes: ["l", "a", "m", "p"] },
+      { word: "fast", phonemes: ["f", "a", "s", "t"] },
+      { word: "hand", phonemes: ["h", "a", "n", "d"] },
+      { word: "sand", phonemes: ["s", "a", "n", "d"] },
+      { word: "milk", phonemes: ["m", "i", "l", "k"] },
+    ],
+  },
+  {
+    id: "phonics-digraphs-sh-ch",
+    title: "Digraphs: sh & ch",
+    difficulty: "intermediate",
+    words: [
+      { word: "ship", phonemes: ["sh", "i", "p"] },
+      { word: "shop", phonemes: ["sh", "o", "p"] },
+      { word: "fish", phonemes: ["f", "i", "sh"] },
+      { word: "chop", phonemes: ["ch", "o", "p"] },
+      { word: "chip", phonemes: ["ch", "i", "p"] },
+      { word: "much", phonemes: ["m", "u", "ch"] },
+    ],
+  },
+  {
+    id: "phonics-digraphs-th",
+    title: "Digraph: th",
+    difficulty: "intermediate",
+    words: [
+      { word: "this", phonemes: ["th", "i", "s"] },
+      { word: "that", phonemes: ["th", "a", "t"] },
+      { word: "them", phonemes: ["th", "e", "m"] },
+      { word: "then", phonemes: ["th", "e", "n"] },
+      { word: "with", phonemes: ["w", "i", "th"] },
+      { word: "bath", phonemes: ["b", "a", "th"] },
+    ],
+  },
+
+  // ADVANCED — long vowels, silent e, vowel teams
+  {
+    id: "phonics-magic-e",
+    title: "Magic E (long vowels)",
+    difficulty: "advanced",
+    words: [
+      { word: "make", phonemes: ["m", "a", "k", "e"] },
+      { word: "bike", phonemes: ["b", "i", "k", "e"] },
+      { word: "rope", phonemes: ["r", "o", "p", "e"] },
+      { word: "cute", phonemes: ["c", "u", "t", "e"] },
+      { word: "name", phonemes: ["n", "a", "m", "e"] },
+      { word: "cake", phonemes: ["c", "a", "k", "e"] },
+    ],
+  },
+  {
+    id: "phonics-vowel-teams",
+    title: "Vowel Teams (ee, ea, oa)",
+    difficulty: "advanced",
+    words: [
+      { word: "tree", phonemes: ["t", "r", "ee"] },
+      { word: "feet", phonemes: ["f", "ee", "t"] },
+      { word: "read", phonemes: ["r", "ea", "d"] },
+      { word: "boat", phonemes: ["b", "oa", "t"] },
+      { word: "rain", phonemes: ["r", "ai", "n"] },
+      { word: "play", phonemes: ["p", "l", "ay"] },
     ],
   },
 ];
@@ -57,22 +201,36 @@ export function getDefaultPhonicsContent(): PhonicsContent {
   return fixturePhonicsContent[0];
 }
 
+export function pickPhonicsContent(
+  difficulty: DifficultyLevel,
+  rotation: number,
+): PhonicsContent {
+  const matching = fixturePhonicsContent.filter((c) => c.difficulty === difficulty);
+  if (matching.length === 0) return fixturePhonicsContent[0];
+  return matching[rotation % matching.length];
+}
+
 export interface SpellingWord {
   word: string;
-  audioHint?: string; // how to say it for TTS
+  audioHint?: string;
 }
 
 export interface SpellingContent {
   id: string;
   title: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
+  difficulty: DifficultyLevel;
   words: SpellingWord[];
 }
 
+/**
+ * Spelling content. Beginner = CVC words. Intermediate = blends + sight words.
+ * Advanced = magic-e + multisyllabic.
+ */
 export const fixtureSpellingContent: SpellingContent[] = [
+  // BEGINNER
   {
     id: "spelling-cvc-1",
-    title: "Spell It!",
+    title: "CVC Words: Set 1",
     difficulty: "beginner",
     words: [
       { word: "cat" },
@@ -84,7 +242,7 @@ export const fixtureSpellingContent: SpellingContent[] = [
   },
   {
     id: "spelling-cvc-2",
-    title: "More Words",
+    title: "CVC Words: Set 2",
     difficulty: "beginner",
     words: [
       { word: "cup" },
@@ -94,34 +252,236 @@ export const fixtureSpellingContent: SpellingContent[] = [
       { word: "hop" },
     ],
   },
+  {
+    id: "spelling-cvc-3",
+    title: "CVC Words: Set 3",
+    difficulty: "beginner",
+    words: [
+      { word: "fox" },
+      { word: "sun" },
+      { word: "bed" },
+      { word: "pig" },
+      { word: "jam" },
+    ],
+  },
+  {
+    id: "spelling-sight-words-pre-k",
+    title: "Sight Words: Pre-K",
+    difficulty: "beginner",
+    words: [
+      { word: "the" },
+      { word: "and" },
+      { word: "see" },
+      { word: "look" },
+      { word: "go" },
+      { word: "we" },
+    ],
+  },
+  {
+    id: "spelling-sight-words-k",
+    title: "Sight Words: Kindergarten",
+    difficulty: "beginner",
+    words: [
+      { word: "you" },
+      { word: "are" },
+      { word: "for" },
+      { word: "have" },
+      { word: "they" },
+      { word: "with" },
+    ],
+  },
+
+  // INTERMEDIATE
+  {
+    id: "spelling-blends",
+    title: "Blends",
+    difficulty: "intermediate",
+    words: [
+      { word: "stop" },
+      { word: "trip" },
+      { word: "jump" },
+      { word: "frog" },
+      { word: "milk" },
+      { word: "hand" },
+    ],
+  },
+  {
+    id: "spelling-digraphs",
+    title: "Digraphs (sh, ch, th)",
+    difficulty: "intermediate",
+    words: [
+      { word: "ship" },
+      { word: "fish" },
+      { word: "chop" },
+      { word: "much" },
+      { word: "this" },
+      { word: "with" },
+    ],
+  },
+  {
+    id: "spelling-sight-words-1st",
+    title: "Sight Words: 1st Grade",
+    difficulty: "intermediate",
+    words: [
+      { word: "from" },
+      { word: "could" },
+      { word: "when" },
+      { word: "your" },
+      { word: "said" },
+      { word: "they" },
+    ],
+  },
+
+  // ADVANCED
+  {
+    id: "spelling-magic-e",
+    title: "Magic E Words",
+    difficulty: "advanced",
+    words: [
+      { word: "make" },
+      { word: "name" },
+      { word: "ride" },
+      { word: "rope" },
+      { word: "cute" },
+      { word: "cake" },
+    ],
+  },
+  {
+    id: "spelling-vowel-teams",
+    title: "Vowel Team Words",
+    difficulty: "advanced",
+    words: [
+      { word: "tree" },
+      { word: "boat" },
+      { word: "rain" },
+      { word: "play" },
+      { word: "team" },
+      { word: "soap" },
+    ],
+  },
 ];
 
 export function getDefaultSpellingContent(): SpellingContent {
   return fixtureSpellingContent[0];
 }
 
+export function pickSpellingContent(
+  difficulty: DifficultyLevel,
+  rotation: number,
+): SpellingContent {
+  const matching = fixtureSpellingContent.filter((c) => c.difficulty === difficulty);
+  if (matching.length === 0) return fixtureSpellingContent[0];
+  return matching[rotation % matching.length];
+}
+
 export interface ReadAloudPassage {
   id: string;
   title: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
+  difficulty: DifficultyLevel;
   text: string;
 }
 
+/**
+ * Decodable read-aloud passages.
+ * Beginner: 30-50 words, mostly CVC.
+ * Intermediate: 50-80 words, blends and digraphs.
+ * Advanced: 80-120 words, mixed patterns and longer sentences.
+ */
 export const fixtureReadAloudPassages: ReadAloudPassage[] = [
+  // BEGINNER (CVC-heavy, very short)
   {
-    id: "read-aloud-1",
+    id: "read-aloud-cat-hat",
     title: "The Cat and the Hat",
     difficulty: "beginner",
     text: "The cat sat on the mat. The cat had a big hat. The hat was red and fat. The cat likes the hat a lot!",
   },
   {
-    id: "read-aloud-2",
+    id: "read-aloud-dog-spot",
     title: "My Dog Spot",
     difficulty: "beginner",
     text: "My dog is Spot. Spot can run and hop. Spot has a big red ball. We play in the sun all day.",
+  },
+  {
+    id: "read-aloud-pig",
+    title: "Pig in the Mud",
+    difficulty: "beginner",
+    text: "A pig is in the mud. The pig is hot. The pig sits in the mud. Mud is fun for a pig!",
+  },
+  {
+    id: "read-aloud-bug",
+    title: "The Bug on the Rug",
+    difficulty: "beginner",
+    text: "A bug is on the rug. The bug is big. I see the bug. The bug can hop. Hop, bug, hop!",
+  },
+  {
+    id: "read-aloud-fox",
+    title: "Fox in a Box",
+    difficulty: "beginner",
+    text: "A fox sat in a box. The box was red. The fox was hot. The fox ran out of the box. Run, fox, run!",
+  },
+
+  // INTERMEDIATE (blends + digraphs)
+  {
+    id: "read-aloud-ship",
+    title: "The Big Ship",
+    difficulty: "intermediate",
+    text: "I see a ship in the shop. The ship is big and red. Fish swim by the ship. The ship can stop and go. I wish I had a ship like that!",
+  },
+  {
+    id: "read-aloud-frog",
+    title: "Frog at the Pond",
+    difficulty: "intermediate",
+    text: "The frog sits on a log. He jumps in with a splash. Plop! The frog swims fast in the pond. He sees a bug and snaps it up. The frog is glad.",
+  },
+  {
+    id: "read-aloud-camp",
+    title: "Camp with Dad",
+    difficulty: "intermediate",
+    text: "Dad and I go to camp. We bring a lamp and a tent. We jump in the lake. The water is cold but fun. At night we sit by the fire and chat. Camp with Dad is the best!",
+  },
+  {
+    id: "read-aloud-shop",
+    title: "At the Shop",
+    difficulty: "intermediate",
+    text: "Mom and I went to the shop. We got fish, milk, and chips. The shop man said hi. He had a big smile. We went home and had lunch. The fish was good.",
+  },
+  {
+    id: "read-aloud-bath",
+    title: "Bath Time",
+    difficulty: "intermediate",
+    text: "It is bath time for my dog. He runs and hides under the bed. I find him and bring him to the tub. He gets in with a splash. Now my dog is wet and clean.",
+  },
+
+  // ADVANCED (long vowels, longer sentences)
+  {
+    id: "read-aloud-bike-ride",
+    title: "The Bike Ride",
+    difficulty: "advanced",
+    text: "I ride my bike to the lake. The sun is hot but the wind feels good on my face. I see a green tree by the path. A bird sings in the tree. I stop and read a book. Then I ride home in time for dinner. What a fine day!",
+  },
+  {
+    id: "read-aloud-rainy-day",
+    title: "A Rainy Day",
+    difficulty: "advanced",
+    text: "The rain came down all day. I sat by the window and read. My cat sat on my lap. She liked the warm room. We could hear the rain on the roof. Drip, drop, drip, drop. I made some hot tea. Then the sun came out and I went out to play.",
+  },
+  {
+    id: "read-aloud-baking",
+    title: "Baking with Grandma",
+    difficulty: "advanced",
+    text: "Grandma showed me how to bake a cake. We mixed eggs, milk, and flour in a big bowl. She let me lick the spoon. The cake baked for thirty minutes. The kitchen smelled so good. When it was done, we put it on the table. We ate the cake with cold milk. It was the best day.",
   },
 ];
 
 export function getDefaultReadAloudPassage(): ReadAloudPassage {
   return fixtureReadAloudPassages[0];
+}
+
+export function pickReadAloudPassage(
+  difficulty: DifficultyLevel,
+  rotation: number,
+): ReadAloudPassage {
+  const matching = fixtureReadAloudPassages.filter((p) => p.difficulty === difficulty);
+  if (matching.length === 0) return fixtureReadAloudPassages[0];
+  return matching[rotation % matching.length];
 }

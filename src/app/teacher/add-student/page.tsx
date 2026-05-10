@@ -1,50 +1,44 @@
 "use client";
 
-import { useAuth } from "@/components/AuthProvider";
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { generateInviteAction } from "./actions";
 
 export default function AddStudentPage() {
-  const { user } = useAuth();
-  const [studentName, setStudentName] = useState("");
-  const [studentAge, setStudentAge] = useState("");
   const [inviteLink, setInviteLink] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  async function generateInvite(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return;
-    setLoading(true);
+  function handleSubmit(formData: FormData) {
     setError("");
-
-    const supabase = createClient();
-    const { data, error: insertError } = await supabase
-      .from("invite_tokens")
-      .insert({
-        teacher_id: user.id,
-        student_name: studentName || null,
-        student_age: studentAge ? parseInt(studentAge) : null,
-      })
-      .select("token")
-      .single();
-
-    if (insertError || !data) {
-      setError(insertError?.message ?? "Failed to generate invite");
-      setLoading(false);
-      return;
-    }
-
-    const link = `${window.location.origin}/join/${data.token}`;
-    setInviteLink(link);
-    setLoading(false);
+    startTransition(async () => {
+      const result = await generateInviteAction(formData);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.link) {
+        setInviteLink(result.link);
+      }
+    });
   }
 
   async function copyLink() {
-    await navigator.clipboard.writeText(inviteLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API blocked (iframe / no user-activation / insecure context).
+      // Fall back to selecting the text so the user can copy manually.
+      const input = document.querySelector<HTMLInputElement>(
+        'input[readonly][value="' + inviteLink + '"]',
+      );
+      input?.select();
+    }
+  }
+
+  function reset() {
+    setInviteLink("");
+    setError("");
   }
 
   return (
@@ -57,16 +51,15 @@ export default function AddStudentPage() {
       </div>
 
       {!inviteLink ? (
-        <form onSubmit={generateInvite} className="space-y-4">
+        <form action={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Student name (optional)
             </label>
             <input
               type="text"
+              name="studentName"
               placeholder="e.g. Maya"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
               className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none focus:border-purple-400"
             />
           </div>
@@ -76,11 +69,10 @@ export default function AddStudentPage() {
             </label>
             <input
               type="number"
+              name="studentAge"
               placeholder="e.g. 7"
               min="3"
               max="18"
-              value={studentAge}
-              onChange={(e) => setStudentAge(e.target.value)}
               className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base outline-none focus:border-purple-400"
             />
           </div>
@@ -93,10 +85,10 @@ export default function AddStudentPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={pending}
             className="w-full rounded-xl bg-purple-600 px-6 py-3 text-lg font-bold text-white shadow-md hover:bg-purple-700 disabled:opacity-50"
           >
-            {loading ? "Generating..." : "Generate Invite Link"}
+            {pending ? "Generating..." : "Generate Invite Link"}
           </button>
         </form>
       ) : (
@@ -125,11 +117,7 @@ export default function AddStudentPage() {
             </p>
           </div>
           <button
-            onClick={() => {
-              setInviteLink("");
-              setStudentName("");
-              setStudentAge("");
-            }}
+            onClick={reset}
             className="w-full rounded-xl border-2 border-gray-200 px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50"
           >
             Generate Another Link

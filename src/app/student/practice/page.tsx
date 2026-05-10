@@ -1,234 +1,79 @@
-"use client";
-
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthProvider";
-import { createClient, supabaseIsConfigured } from "@/lib/supabase/client";
-import { createSessionTracker } from "@/lib/tracker";
-import PhonicsActivity from "@/components/activities/PhonicsActivity";
-import SpellingActivity from "@/components/activities/SpellingActivity";
-import ReadAloudActivity from "@/components/activities/ReadAloudActivity";
-import PetDisplay from "@/components/PetDisplay";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import PracticeRunner from "./PracticeRunner";
 import {
-  fixtureStudent,
-  getDefaultPhonicsContent,
-  getDefaultSpellingContent,
-  getDefaultReadAloudPassage,
+  pickPhonicsContent,
+  pickSpellingContent,
+  pickReadAloudPassage,
 } from "@/lib/fixtures/student";
-import type { Student, FocusAreaType } from "@/types/database";
+import type {
+  Student,
+  FocusAreaType,
+  DifficultyLevel,
+} from "@/types/database";
 
-interface SessionActivity {
-  type: FocusAreaType;
-}
+export default async function PracticePage() {
+  const supabase = await createClient();
 
-interface SessionResult {
-  coinsEarned: number;
-  wordsCompleted: number;
-  durationSeconds: number;
-}
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-type PageState = "loading" | "activity" | "complete";
+  const { data: studentData } = await supabase
+    .from("students")
+    .select("*")
+    .eq("parent_id", user.id)
+    .single();
 
-export default function PracticePage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+  if (!studentData) redirect("/student");
 
-  const [student, setStudent] = useState<Student | null>(null);
-  const [activities, setActivities] = useState<SessionActivity[]>([]);
-  const [activityIndex, setActivityIndex] = useState(0);
-  const [pageState, setPageState] = useState<PageState>("loading");
-  const [totalCoins, setTotalCoins] = useState(0);
-  const [totalDuration, setTotalDuration] = useState(0);
+  const student = studentData as Student;
 
-  const trackerRef = useRef(createSessionTracker("fixture"));
+  // Fetch focus areas with their difficulty
+  const { data: focusData } = await supabase
+    .from("focus_areas")
+    .select("area, difficulty, active")
+    .eq("student_id", student.id)
+    .eq("active", true);
 
-  const phonicsContent = useMemo(() => getDefaultPhonicsContent(), []);
-  const spellingContent = useMemo(() => getDefaultSpellingContent(), []);
-  const readAloudPassage = useMemo(() => getDefaultReadAloudPassage(), []);
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!supabaseIsConfigured()) {
-      const s = fixtureStudent;
-      setStudent(s);
-      trackerRef.current = createSessionTracker(s.id);
-      setActivities([
-        { type: "phonics" },
-        { type: "spelling" },
-        { type: "read_aloud" },
-      ]);
-      setPageState("activity");
-      return;
-    }
-
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    async function loadSession() {
-      const supabase = createClient();
-
-      const { data: studentData } = await supabase
-        .from("students")
-        .select("*")
-        .eq("parent_id", user!.id)
-        .single();
-
-      if (!studentData) {
-        router.push("/student");
-        return;
-      }
-
-      const s = studentData as Student;
-      setStudent(s);
-      trackerRef.current = createSessionTracker(s.id);
-
-      const { data: focusData } = await supabase
-        .from("focus_areas")
-        .select("area")
-        .eq("student_id", s.id)
-        .eq("active", true);
-
-      const activeAreas = new Set(
-        (focusData ?? []).map((f: { area: FocusAreaType }) => f.area),
-      );
-
-      // Default all three if nothing is set
-      const order: FocusAreaType[] = ["phonics", "spelling", "read_aloud"];
-      const builtActivities =
-        activeAreas.size > 0
-          ? order
-              .filter((a) => activeAreas.has(a))
-              .map((type) => ({ type }))
-          : order.map((type) => ({ type }));
-
-      setActivities(builtActivities);
-      setPageState("activity");
-    }
-
-    loadSession();
-  }, [user, authLoading, router]);
-
-  const handleActivityComplete = useCallback(
-    async (result: Partial<SessionResult>) => {
-      const coins = result.coinsEarned ?? 0;
-      const duration = result.durationSeconds ?? 0;
-
-      setTotalCoins((prev) => prev + coins);
-      setTotalDuration((prev) => prev + duration);
-
-      const nextIndex = activityIndex + 1;
-      if (nextIndex >= activities.length) {
-        const finalCoins = totalCoins + coins;
-        const finalDuration = totalDuration + duration;
-        await trackerRef.current.finish({
-          coinsEarned: finalCoins,
-          durationSeconds: finalDuration,
-        });
-        setPageState("complete");
-      } else {
-        setActivityIndex(nextIndex);
-      }
-    },
-    [activityIndex, activities.length, totalCoins, totalDuration],
+  type FocusRow = { area: FocusAreaType; difficulty: DifficultyLevel };
+  const focusMap = new Map<FocusAreaType, DifficultyLevel>(
+    ((focusData ?? []) as FocusRow[]).map((f) => [f.area, f.difficulty]),
   );
 
-  if (pageState === "loading" || !student) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-amber-50">
-        <p className="text-gray-400">Loading practice…</p>
-      </div>
-    );
-  }
+  const order: FocusAreaType[] = ["phonics", "spelling", "read_aloud"];
+  const activities = focusMap.size > 0
+    ? order.filter((a) => focusMap.has(a))
+    : order;
 
-  if (pageState === "complete") {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-amber-50 px-4 py-10 gap-8">
-        <div className="text-center">
-          <div className="text-7xl mb-4">🎉</div>
-          <h1 className="text-3xl font-extrabold text-purple-700">
-            Practice done!
-          </h1>
-          <p className="mt-2 text-gray-500">
-            You earned{" "}
-            <span className="font-bold text-amber-600">{totalCoins} coins</span>{" "}
-            for {student.pet_name}!
-          </p>
-        </div>
+  // Count completed sessions for content rotation. New students see set 0,
+  // after their first completed session they see set 1, etc.
+  const { count: completedCount } = await supabase
+    .from("practice_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", student.id)
+    .eq("completed", true);
 
-        <PetDisplay
-          petType={student.pet_type}
-          petName={student.pet_name}
-          mood="excited"
-          coins={student.coins + totalCoins}
-          size="lg"
-        />
+  const rotation = completedCount ?? 0;
 
-        <button
-          onClick={() => router.push("/student")}
-          className="w-full max-w-xs rounded-2xl bg-purple-600 px-6 py-4 text-xl font-extrabold text-white shadow-lg hover:bg-purple-700 active:scale-95 transition-transform"
-        >
-          Back to Home 🏠
-        </button>
-      </div>
-    );
-  }
+  // Pre-pick the content for each activity on the server so the runner
+  // doesn't need to call any fixture-lookup logic.
+  const phonicsDifficulty = focusMap.get("phonics") ?? "beginner";
+  const spellingDifficulty = focusMap.get("spelling") ?? "beginner";
+  const readAloudDifficulty = focusMap.get("read_aloud") ?? "beginner";
 
-  const currentActivity = activities[activityIndex];
-  const progressPct = Math.round((activityIndex / activities.length) * 100);
+  const phonicsContent = pickPhonicsContent(phonicsDifficulty, rotation);
+  const spellingContent = pickSpellingContent(spellingDifficulty, rotation);
+  const readAloudPassage = pickReadAloudPassage(readAloudDifficulty, rotation);
 
   return (
-    <div className="flex min-h-screen flex-col bg-amber-50">
-      {/* Progress bar */}
-      <div className="h-2 bg-gray-200">
-        <div
-          className="h-2 bg-purple-500 transition-all duration-500"
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
-
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <button
-          onClick={() => router.push("/student")}
-          className="text-sm font-semibold text-gray-400 hover:text-gray-600"
-        >
-          ← Home
-        </button>
-        <p className="text-sm font-bold text-gray-500">
-          {activityIndex + 1} / {activities.length}
-        </p>
-        <div className="text-sm font-bold text-amber-600">
-          🪙 {totalCoins}
-        </div>
-      </div>
-
-      {/* Activity area */}
-      <div className="flex-1">
-        {currentActivity.type === "phonics" && (
-          <PhonicsActivity
-            content={phonicsContent}
-            tracker={trackerRef.current}
-            onComplete={handleActivityComplete}
-          />
-        )}
-        {currentActivity.type === "spelling" && (
-          <SpellingActivity
-            content={spellingContent}
-            tracker={trackerRef.current}
-            onComplete={handleActivityComplete}
-          />
-        )}
-        {currentActivity.type === "read_aloud" && (
-          <ReadAloudActivity
-            passage={readAloudPassage}
-            tracker={trackerRef.current}
-            onComplete={handleActivityComplete}
-          />
-        )}
-      </div>
-    </div>
+    <PracticeRunner
+      student={student}
+      activities={activities}
+      phonicsContent={phonicsContent}
+      spellingContent={spellingContent}
+      readAloudPassage={readAloudPassage}
+    />
   );
 }

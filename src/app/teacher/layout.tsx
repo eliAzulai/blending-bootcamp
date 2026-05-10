@@ -1,33 +1,32 @@
-"use client";
-
-import { useAuth } from "@/components/AuthProvider";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import SignOutButton from "@/components/SignOutButton";
 
-export default function TeacherLayout({
+export default async function TeacherLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, role, loading, signOut } = useAuth();
-  const router = useRouter();
+  const supabase = await createClient();
 
-  useEffect(() => {
-    if (!loading && (!user || role !== "teacher")) {
-      router.push("/login");
-    }
-  }, [user, role, loading, router]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    );
+  if (!user) {
+    redirect("/login");
   }
 
-  if (!user || role !== "teacher") return null;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.role !== "teacher") {
+    redirect("/login");
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -49,12 +48,7 @@ export default function TeacherLayout({
             >
               + Add Student
             </Link>
-            <button
-              onClick={signOut}
-              className="text-sm text-gray-400 hover:text-gray-600"
-            >
-              Sign Out
-            </button>
+            <SignOutButton />
           </div>
         </div>
       </nav>

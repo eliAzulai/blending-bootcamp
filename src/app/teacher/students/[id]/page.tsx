@@ -1,30 +1,36 @@
-"use client";
-
-import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthProvider";
-import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import FocusAreaToggle from "@/components/teacher/FocusAreaToggle";
 import TagManager from "@/components/teacher/TagManager";
-import { PET_EMOJI, type Student, type FocusArea, type Tag } from "@/types/database";
-import Link from "next/link";
+import PracticeHistory from "@/components/teacher/PracticeHistory";
+import {
+  PET_EMOJI,
+  type Student,
+  type FocusArea,
+  type Tag,
+  type FocusAreaType,
+} from "@/types/database";
 
-export default function StudentDetailPage() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
-  const { user } = useAuth();
-  const router = useRouter();
-  const [student, setStudent] = useState<Student | null>(null);
-  const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
-  const [studentTags, setStudentTags] = useState<Tag[]>([]);
-  const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState(true);
+export default async function StudentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
 
-  const loadData = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-    const [studentRes, focusRes, studentTagsRes, allTagsRes] = await Promise.all([
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const [studentRes, focusRes, studentTagsRes, allTagsRes, sessionsRes] =
+    await Promise.all([
       supabase
         .from("students")
         .select("*")
@@ -34,40 +40,60 @@ export default function StudentDetailPage() {
       supabase.from("focus_areas").select("*").eq("student_id", id),
       supabase.from("student_tags").select("tag_id").eq("student_id", id),
       supabase.from("tags").select("*").eq("teacher_id", user.id),
+      supabase
+        .from("practice_sessions")
+        .select("id, date, duration_seconds, coins_earned, completed")
+        .eq("student_id", id)
+        .gte("date", fourteenDaysAgo)
+        .order("date", { ascending: false }),
     ]);
 
-    if (!studentRes.data) {
-      router.push("/teacher");
-      return;
-    }
+  if (!studentRes.data) redirect("/teacher");
 
-    setStudent(studentRes.data as Student);
-    setFocusAreas((focusRes.data ?? []) as FocusArea[]);
+  const student = studentRes.data as Student;
+  const focusAreas = (focusRes.data ?? []) as FocusArea[];
+  const allTags = (allTagsRes.data ?? []) as Tag[];
 
-    const tagIds = new Set(
-      (studentTagsRes.data ?? []).map((st: { tag_id: string }) => st.tag_id),
-    );
-    const allTagsList = (allTagsRes.data ?? []) as Tag[];
-    setAllTags(allTagsList);
-    setStudentTags(allTagsList.filter((t) => tagIds.has(t.id)));
+  const studentTagIds = new Set(
+    (studentTagsRes.data ?? []).map((st: { tag_id: string }) => st.tag_id),
+  );
+  const studentTags = allTags.filter((t) => studentTagIds.has(t.id));
 
-    setLoading(false);
-  }, [id, user, router]);
+  type SessionRow = {
+    id: string;
+    date: string;
+    duration_seconds: number;
+    coins_earned: number;
+    completed: boolean;
+  };
+  const sessions = (sessionsRes.data ?? []) as SessionRow[];
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  if (loading || !student) {
-    return <p className="py-12 text-center text-gray-400">Loading...</p>;
+  // Fetch attempts only for the recent sessions to keep the query bounded
+  const sessionIds = sessions.slice(0, 10).map((s) => s.id);
+  type AttemptRow = {
+    id: string;
+    session_id: string;
+    activity_type: FocusAreaType;
+    content_ref: string | null;
+    score: number | null;
+    duration_seconds: number;
+    transcript: string | null;
+    created_at: string;
+  };
+  let attempts: AttemptRow[] = [];
+  if (sessionIds.length > 0) {
+    const { data: attemptsData } = await supabase
+      .from("activity_attempts")
+      .select(
+        "id, session_id, activity_type, content_ref, score, duration_seconds, transcript, created_at",
+      )
+      .in("session_id", sessionIds);
+    attempts = (attemptsData ?? []) as AttemptRow[];
   }
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/teacher"
-        className="text-sm text-purple-600 hover:underline"
-      >
+      <Link href="/teacher" className="text-sm text-purple-600 hover:underline">
         ← Back to dashboard
       </Link>
 
@@ -88,24 +114,15 @@ export default function StudentDetailPage() {
           studentId={student.id}
           currentTags={studentTags}
           allTags={allTags}
-          onUpdate={loadData}
         />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <FocusAreaToggle
-          studentId={student.id}
-          focusAreas={focusAreas}
-          onUpdate={loadData}
-        />
+        <FocusAreaToggle studentId={student.id} focusAreas={focusAreas} />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-gray-700">Practice History</h3>
-        <p className="mt-2 text-xs text-gray-400">
-          Practice sessions will appear here once the student starts using the
-          app.
-        </p>
+        <PracticeHistory sessions={sessions} attempts={attempts} />
       </div>
     </div>
   );

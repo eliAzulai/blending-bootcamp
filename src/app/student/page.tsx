@@ -1,96 +1,24 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/components/AuthProvider";
-import { createClient, supabaseIsConfigured } from "@/lib/supabase/client";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import PetDisplay from "@/components/PetDisplay";
-import { fixtureStudent } from "@/lib/fixtures/student";
 import type { Student } from "@/types/database";
 
-export default function StudentHomePage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const [student, setStudent] = useState<Student | null>(null);
-  const [practicedToday, setPracticedToday] = useState(false);
-  const [streakDays, setStreakDays] = useState(0);
-  const [loading, setLoading] = useState(true);
+export default async function StudentHomePage() {
+  const supabase = await createClient();
 
-  useEffect(() => {
-    if (authLoading) return;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-    if (!supabaseIsConfigured()) {
-      setStudent(fixtureStudent);
-      setLoading(false);
-      return;
-    }
+  const { data: studentData } = await supabase
+    .from("students")
+    .select("*")
+    .eq("parent_id", user.id)
+    .single();
 
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    async function loadStudent() {
-      const supabase = createClient();
-
-      const { data } = await supabase
-        .from("students")
-        .select("*")
-        .eq("parent_id", user!.id)
-        .single();
-
-      if (!data) {
-        setLoading(false);
-        return;
-      }
-
-      setStudent(data as Student);
-
-      const today = new Date().toISOString().slice(0, 10);
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10);
-
-      const { data: sessions } = await supabase
-        .from("practice_sessions")
-        .select("date, completed")
-        .eq("student_id", (data as Student).id)
-        .gte("date", thirtyDaysAgo)
-        .order("date", { ascending: false });
-
-      const completedDates = new Set(
-        (sessions ?? [])
-          .filter((s: { date: string; completed: boolean }) => s.completed)
-          .map((s: { date: string }) => s.date),
-      );
-
-      setPracticedToday(completedDates.has(today));
-
-      let streak = 0;
-      const d = new Date();
-      while (true) {
-        const dateStr = d.toISOString().slice(0, 10);
-        if (!completedDates.has(dateStr)) break;
-        streak++;
-        d.setDate(d.getDate() - 1);
-      }
-      setStreakDays(streak);
-      setLoading(false);
-    }
-
-    loadStudent();
-  }, [user, authLoading, router]);
-
-  if (loading || authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-400">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!student) {
+  if (!studentData) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-xl">
@@ -102,6 +30,37 @@ export default function StudentHomePage() {
         </div>
       </div>
     );
+  }
+
+  const student = studentData as Student;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const { data: sessions } = await supabase
+    .from("practice_sessions")
+    .select("date, completed")
+    .eq("student_id", student.id)
+    .gte("date", thirtyDaysAgo)
+    .order("date", { ascending: false });
+
+  const completedDates = new Set(
+    (sessions ?? [])
+      .filter((s: { date: string; completed: boolean }) => s.completed)
+      .map((s: { date: string }) => s.date),
+  );
+
+  const practicedToday = completedDates.has(today);
+
+  let streakDays = 0;
+  const d = new Date();
+  while (true) {
+    const dateStr = d.toISOString().slice(0, 10);
+    if (!completedDates.has(dateStr)) break;
+    streakDays++;
+    d.setDate(d.getDate() - 1);
   }
 
   return (
