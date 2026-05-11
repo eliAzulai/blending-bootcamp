@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Andika } from "next/font/google";
-import AuthProvider from "@/components/AuthProvider";
 import "./globals.css";
 
 // Primary-type literacy font — single-storey `a` and `g` so screen letterforms
@@ -39,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" className={andika.variable}>
       <body className={`${andika.className} min-h-screen bg-gradient-to-b from-[#FFF8E1] to-[#FFF0D0] antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   );
