@@ -38,7 +38,10 @@ html {
 }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* font-family is set by next/font/google (Andika) on the body element
+   * via className in app/layout.tsx. Do not add a system-ui fallback here —
+   * it would override Andika before the font finishes loading.
+   * See docs/non-negotiable-rules.md R1. */
   overflow-x: hidden;
   color: #2D1B69;
 }

@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Read first**: [`docs/non-negotiable-rules.md`](docs/non-negotiable-rules.md) — root rules that override design preference, content generation, and developer taste. Particularly R1 (literacy font, no system-ui) and R2-R3 (decodability + difficulty progression).
+
 ## Commands
 
 - `npm run dev` — dev server on port 3000
