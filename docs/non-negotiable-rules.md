@@ -49,13 +49,63 @@ Both photosensitivity protection and concentration. Animations that draw attenti
 
 Whisper transcribes read-aloud passages but does not pass/fail the child. This is in the design spec and is not a typography rule, but it lives here because it's commonly forgotten when adding new activities or scoring.
 
+## R8 — Numerals must match handwriting forms
+
+The same rule as R1 (letterforms) applied to digits. Geometric/grotesque fonts render digits in shapes children don't write:
+
+- **`4`** — must be open-top (looks like a sail / chair). Geometric `4` with a closed triangle top is forbidden.
+- **`1`** — must be a simple vertical stroke, optionally with a small upper-left serif. No flag-style top, no full serif foot.
+- **`7`** — uncrossed `7` is the US/UK schoolbook form and is what we use. Crossed (European) `7` is fine for Israeli adults but children learning English use the uncrossed form.
+- **`9`** — straight descender (no curl back). 
+- **`0`** — round circle, no slash, no dot in the middle.
+
+**Andika satisfies R8 by default** — it was designed specifically for primary readers. If we ever swap fonts, re-verify each digit visually before merging.
+
+Use Tabular numerals (`font-variant-numeric: tabular-nums`) only on the teacher dashboard for alignment. Child-facing surfaces use proportional numerals.
+
+## R9 — No ligatures, generous letter-spacing on child surfaces
+
+Default browser text rendering applies ligatures (`fi`, `ff`, `fl`) that fuse adjacent letters into a single glyph. Early readers cannot map that fused glyph back to individual phonemes. They will literally try to sound out "fi" as a single letter.
+
+**Rule on `<body>`:**
+```css
+font-variant-ligatures: none;
+text-rendering: optimizeLegibility;
+letter-spacing: 0.01em; /* slight tracking; readable but not sparse */
+```
+
+For wordlist letter boxes (Spelling activity), letter-spacing should be even more generous — the boxes themselves already separate letters, so internal letter-spacing should be `0`.
+
+## R10 — Audio consistency: one accent per session
+
+If TTS pronounces a word in US English on one session and UK English the next, the child re-learns the same word twice. Lock the TTS to a single voice for the entire app. Default: a US English child-friendly voice. Don't mix British/American within or across activities until Phase 2.
+
+## R11 — Punctuation budget by difficulty
+
+Generated passages and any child-facing prose must respect:
+
+- **Beginner**: `. , ?` only. No exclamation marks until kids are comfortable with question marks. No quotation marks. No apostrophes (so no contractions: "can not" instead of "can't").
+- **Intermediate**: above plus `!` and apostrophes in contractions.
+- **Advanced**: above plus quotation marks for dialogue. Still no semicolons, em-dashes, colons, parentheses, ellipses.
+
+If your output uses a forbidden mark, regenerate.
+
+## R12 — No dark mode on child surfaces
+
+Children learn to read on white/cream backgrounds with dark text — books, worksheets, the live whiteboard in Ilana's class. Inverting the contrast is unfamiliar and reduces transfer. The app must default to and lock into light mode for `/student/*` routes.
+
+Teacher dashboard can support both light and dark (legitimate adult preference).
+
 ---
 
 ## Enforcement layers
 
 | Layer | Mechanism |
 |---|---|
-| Typography | `next/font/google` import of Andika at the root layout; CSS `font-family` cascades from `<body>`. No component overrides this with a system font. |
-| Content generation | `~/.claude/skills/wordpets-content/SKILL.md` Step 4 references this file as a hard constraint. |
-| Code review | Any PR touching `globals.css`, `layout.tsx`, or fixtures that reintroduces system fonts or violates R2/R3 should be flagged. |
-| Future: ESLint rule | `no-restricted-syntax` on `font-family: system-ui` strings in CSS. |
+| Typography (R1, R8, R9) | `next/font/google` Andika in root layout. CSS in `globals.css` body: `font-variant-ligatures: none`, `text-rendering: optimizeLegibility`, `letter-spacing: 0.01em`. No system-ui fallback anywhere. |
+| Reading direction (R4) | `<html dir="ltr">` in root layout. |
+| Dark mode lock (R12) | `<html lang="en" dir="ltr">` with no `dark:` Tailwind classes on `/student/*`. CSS `color-scheme: light` on child routes. |
+| Content rules (R2, R3, R11) | `~/.claude/skills/wordpets-content/SKILL.md` Knowledge base section 0. Validation checklist Step 5. |
+| Audio (R10) | Lock TTS voice in `src/lib/speech.ts`. |
+| Code review | Any PR touching `globals.css`, `layout.tsx`, fixtures, or speech files that reintroduces forbidden patterns should be flagged. |
+| Future: ESLint rule | `no-restricted-syntax` for `font-family: system-ui` strings; ban `dark:` Tailwind classes inside `src/app/student/`. |

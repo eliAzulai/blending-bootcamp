@@ -44,6 +44,15 @@ body {
    * See docs/non-negotiable-rules.md R1. */
   overflow-x: hidden;
   color: #2D1B69;
+
+  /* R9 — early readers cannot map fused glyphs back to phonemes.
+   * Disable ligatures and give a slight tracking. */
+  font-variant-ligatures: none;
+  text-rendering: optimizeLegibility;
+  letter-spacing: 0.01em;
+
+  /* R12 — child surfaces lock to light. Teacher dashboard can override. */
+  color-scheme: light;
 }
 
 /* =============================================
