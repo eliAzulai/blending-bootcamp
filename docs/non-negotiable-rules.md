@@ -2,6 +2,10 @@
 
 These are root rules that override design preference, content generation, and developer taste. If a rule conflicts with anything else in the docs, this file wins. Any change here requires explicit pedagogical justification.
 
+## Audience framing
+
+The app is **for English-speaking children ages 6-8 learning to read English**. The location of the household (often Israel) is incidental. We deliberately **do not adapt for ESL or for Hebrew L1 interference** — Ilana's experience shows immersion is more effective even for the occasional Hebrew-speaking child. Rules below treat the audience as native English speakers who are early readers, not as ESL learners.
+
 ## R1 — Letterforms must match what children handwrite
 
 **Problem.** Most computer fonts render `a` and `g` as double-storey shapes (looped). Israeli children learning English handwriting are taught single-storey `a` (round bowl + simple stem) and single-storey `g` (round bowl + simple descender). A child cannot match what they see on screen to what their hand produces.
@@ -35,7 +39,7 @@ See: `kb/extracted/principles/consistency-breeds-trust.md`.
 
 ## R4 — Reading direction is left-to-right with explicit dir="ltr"
 
-These children also read Hebrew (RTL). The app must explicitly mark all reading surfaces as `dir="ltr"` (HTML attribute) rather than relying on browser defaults, because their devices may have Hebrew as the system language with RTL defaults.
+All reading surfaces must be marked `dir="ltr"` explicitly on `<html>` rather than relying on browser defaults. Devices and OSes can be set to RTL locales (Hebrew, Arabic) which would inherit RTL for the document. Setting it explicitly is defense-in-depth.
 
 ## R5 — No italics in child-facing surfaces
 
@@ -96,6 +100,58 @@ Children learn to read on white/cream backgrounds with dark text — books, work
 
 Teacher dashboard can support both light and dark (legitimate adult preference).
 
+## R13 — Letter names and letter sounds must be visually and structurally distinguished
+
+**Problem.** A child shown a `B` card and asked "what does this say?" will often answer with the letter *name* ("bee") instead of the *sound* (`/b/`). Whisper or fuzzy matching may accept "bee" as right, which trains the child to confuse name and sound — a known source of decoding failure (Reading Recovery; Orton-Gillingham canon).
+
+**Rule.**
+
+- Sounds rendered in text always appear between slashes and in a distinct color (e.g. teal `/b/`). Letter names appear as the plain glyph (`B`).
+- TTS audio for a sound never says the letter name and vice versa. Audio assets are named `sound-b.mp3` vs `name-b.mp3` and never aliased.
+- Generated content must declare `kind: "sound" | "name"` for any letter-only card.
+
+This is a universal early-reading rule, not Hebrew-specific.
+
+## R17 — Raw Whisper transcripts are never shown to the child
+
+**Problem.** Whisper transcribing a 6-year-old reading "the cat sat" may return "duh cat sad." If we render that text back to the child, they internalize a wrong spelling. R7 says Whisper is non-authoritative for *scoring*; this extends to *display*.
+
+**Rule.**
+
+- The raw transcript field never appears on a `/student/*` surface.
+- Teacher dashboards may show the transcript with an explicit "machine transcript, may be inaccurate" label.
+- The child always sees the original passage and a generic positive acknowledgment ("Great reading!"), never their own (possibly wrong) words.
+
+## R19 — Touch targets minimum 48×48 CSS px with 8 px gaps
+
+WCAG 2.2 AA Target Size requires 24×24 minimum, but child motor research and Apple HIG for kids' apps recommend 48 px. Smaller targets cause misclicks that get logged as wrong answers, distorting the teacher dashboard.
+
+**Rule.** All tappable elements on `/student/*` are minimum **48×48 CSS px** with **8 px spacing** between adjacent targets. Spelling letter boxes are at least 56×56. Use a Tailwind preset (`min-h-12 min-w-12`) when convenient.
+
+## R21 — Passage typography: short line length, generous line height, ragged-right
+
+**Problem.** Default web typography (long lines, tight line height, sometimes justified) is brutal for early readers. Justified text creates "rivers" of whitespace that disrupt left-to-right tracking. BDA (British Dyslexia Association) style guide, Bringhurst, and Hooked on Phonics readers all converge.
+
+**Rule.** Passages on `/student/*` use:
+- `max-width: 32ch` (about 45-55 characters per line)
+- `line-height: 1.6`
+- `text-align: left` (never `justify` and never `center` for paragraphs)
+- Paragraph spacing at least `1em`
+
+Enforce via a `.passage` class in `globals.css` applied by the read-aloud component.
+
+## R24 — Teacher preview = byte-identical to student delivery
+
+**Problem.** Companion-app failure mode: teacher previews an assigned activity, then the assigned student sees something different (because of randomization, A/B, on-the-fly substitution). Ilana can't intervene on what she didn't see.
+
+**Rule.** When a teacher previews a practice item, the rendered content is the same content the student will get. No randomization between preview and delivery; no per-render shuffles. The picker (`src/lib/content.ts`) is already deterministic given `(student_id, rotation_count, difficulty)` — preserve that contract. The preview surface (when built) must use the same render path with a synthetic student id.
+
+## R25 — No streak shaming, no "you missed yesterday" copy
+
+**Problem.** Streak mechanics work for adults; for 6-8 year olds whose practice depends on a parent putting an iPad in their hand, broken streaks punish the kid for the parent's day. Industry retention data on under-10s shows streak loss is a churn driver.
+
+**Rule.** No UI surface in `/student/*` references missed days, broken streaks, or negative deltas. Pet "hunger" is a soft prompt to play, never a guilt cue. Positive framing only ("ready to play!" not "haven't seen you in 2 days"). Ban regex on copy review: `missed|broken|lost|haven't|been a while|where have you`.
+
 ---
 
 ## Enforcement layers
@@ -103,9 +159,14 @@ Teacher dashboard can support both light and dark (legitimate adult preference).
 | Layer | Mechanism |
 |---|---|
 | Typography (R1, R8, R9) | `next/font/google` Andika in root layout. CSS in `globals.css` body: `font-variant-ligatures: none`, `text-rendering: optimizeLegibility`, `letter-spacing: 0.01em`. No system-ui fallback anywhere. |
+| Passage typography (R21) | `.passage` class in `globals.css`: `max-width: 32ch; line-height: 1.6; text-align: left;`. Applied by `ReadAloudActivity`. |
+| Touch targets (R19) | Tailwind preset `min-h-12 min-w-12` on tappable elements. Spelling boxes use `min-h-14 min-w-14`. |
 | Reading direction (R4) | `<html dir="ltr">` in root layout. |
-| Dark mode lock (R12) | `<html lang="en" dir="ltr">` with no `dark:` Tailwind classes on `/student/*`. CSS `color-scheme: light` on child routes. |
-| Content rules (R2, R3, R11) | `~/.claude/skills/wordpets-content/SKILL.md` Knowledge base section 0. Validation checklist Step 5. |
+| Dark mode lock (R12) | No `dark:` Tailwind classes on `/student/*`. CSS `color-scheme: light` on body. |
+| Content rules (R2, R3, R11, R13) | `~/.claude/skills/wordpets-content/SKILL.md` Knowledge base section 0. Validation checklist Step 5. |
 | Audio (R10) | Lock TTS voice in `src/lib/speech.ts`. |
-| Code review | Any PR touching `globals.css`, `layout.tsx`, fixtures, or speech files that reintroduces forbidden patterns should be flagged. |
-| Future: ESLint rule | `no-restricted-syntax` for `font-family: system-ui` strings; ban `dark:` Tailwind classes inside `src/app/student/`. |
+| Transcript scope (R17) | Code review: any component receiving a `transcript` prop or rendering `attempt.transcript` from `/student/*` is a violation. |
+| Determinism (R24) | `src/lib/content.ts` picker functions take `(supabase, difficulty, rotation)` and return deterministic results. No `Math.random()` or per-render shuffles inside child render paths. |
+| Streak copy (R25) | Code review on `PetDisplay`, mood-string maps, and any `/student/*` copy. Ban regex: `missed\|broken\|lost\|haven't`. |
+| Code review | Any PR touching `globals.css`, `layout.tsx`, fixtures, speech, or pet/streak copy that reintroduces forbidden patterns should be flagged. |
+| Future: ESLint rule | `no-restricted-syntax` for `font-family: system-ui` strings; ban `dark:` Tailwind classes inside `src/app/student/`; ban `transcript` references on `src/app/student/**`. |

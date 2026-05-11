@@ -55,6 +55,19 @@ body {
   color-scheme: light;
 }
 
+/* R21 — passage typography for read-aloud and any prose surface on /student/*.
+ * Short line length, generous line height, left-aligned (never justified).
+ * Apply via className="passage" on the container. */
+.passage {
+  max-width: 32ch;
+  line-height: 1.6;
+  text-align: left;
+  margin-inline: auto;
+}
+.passage p + p {
+  margin-top: 1em;
+}
+
 /* =============================================
  * Card state animations
  * ============================================= */

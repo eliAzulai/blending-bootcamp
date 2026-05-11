@@ -114,7 +114,7 @@ export default function PracticeRunner({
       <div className="flex items-center justify-between px-4 py-3">
         <button
           onClick={() => router.push("/student")}
-          className="text-sm font-semibold text-gray-400 hover:text-gray-600"
+          className="min-h-12 min-w-12 px-3 text-sm font-semibold text-gray-400 hover:text-gray-600"
         >
           ← Home
         </button>
