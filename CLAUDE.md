@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Read first**: [`docs/non-negotiable-rules.md`](docs/non-negotiable-rules.md) — root rules that override design preference, content generation, and developer taste. Particularly R1 (literacy font, no system-ui) and R2-R3 (decodability + difficulty progression).
+
 ## Commands
 
 - `npm run dev` — dev server on port 3000
@@ -17,38 +19,36 @@ WordPets — a companion practice app assigned by a teacher (Eli's wife, Ilana) 
 
 **Target users (Phase 1a):** English-speaking children living in Israel ages 6-8. They speak/understand English fluently but struggle with reading and writing.
 
-## Status (as of 2026-04-22)
+## Status (as of 2026-05-11)
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **Phase 0 — Blending Bootcamp MVP** | 14-day phonics blending program, ages 5-7, self-service | **SHELVED as starting point.** Code preserved (see "Phase 0 codebase" below). Do NOT actively iterate. Treat as a working reference for the speech/blending mechanic that gets reused inside Phase 1a. |
-| **Phase 1a — Companion App MVP** | Teacher-assigned practice for wife's students (ages 6-8). 3 activities (Phonics, Spelling, Read Aloud), thin pet system, minimal teacher dashboard. | **ACTIVE.** Authoritative spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Skeleton scaffolded in `src/app/teacher/`, `src/app/join/`, `src/app/signup/`, `src/components/teacher/`. |
-| **Phase 1b — Earn Expansion** | More activities, pet room/outfits/evolution, ages 9-12, parent summaries | Deferred — only if 1a validates (≥60% of wife's students practice 4+ days/week after 4 weeks). |
-| **Phase 2+** | Live teaching platform, teacher SaaS, standalone B2C | Out of scope for this codebase right now. |
+| **Phase 1a — Companion App** | Teacher-assigned practice for Ilana's students (ages 6-8). 3 activities (Phonics, Spelling, Read Aloud), thin pet system, minimal teacher dashboard. | **LIVE** at https://app.wordpets.xyz. Spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Success metric: ≥60% practicing 4+ days/week after 4 weeks. |
+| **Phase 1b — Earn Expansion** | More activities, pet room/outfits/evolution, ages 9-12, parent summaries | Deferred — only triggered if 1a hits its metric. |
+| **Phase 2+** | Live teaching platform, teacher SaaS, standalone B2C | Out of scope for this codebase. |
 
-**Decision log:** The pivot from Phase 0 → Phase 1a was made on 2026-04-14 (resolved in the design spec) and formally documented on 2026-04-22. Phase 0 is kept because (a) its speech pipeline + phoneme matching is the foundation Phase 1a builds on, and (b) it's the historical proof that the core mechanic works.
+The original **Phase 0 — Blending Bootcamp** (14-day standalone phonics program) was the starting point of this repo. As of 2026-05-11 its routes and supporting files have been removed; only the reusable mechanic survives: `BlendingExercise.tsx` + `PhonemeCard.tsx` + `useSpeechRecognition.ts` + `phoneme-matching.ts` + `speech.ts`. Those are used by `PhonicsActivity` inside the Phase 1a practice loop. There is no longer a "Phase 0 codebase to preserve" — the cleanup is complete.
 
 ## Architecture
 
-### Phase 0 codebase (frozen — reference only)
+### Routes (Phase 1a — current)
 
-The original Blending Bootcamp MVP. Don't add features here; reuse pieces inside Phase 1a activities.
+- `/` — server-rendered landing page. Routes signed-in users to their role-appropriate home.
+- `/signup`, `/login` — server actions (no AuthProvider). See `auth/actions.ts` and per-page `actions.ts`.
+- `/join/[token]`, `/join/[token]/pet-select`, `/join/success` — parent join flow.
+- `/student`, `/student/practice` — child home + practice runner. Both server components; activities themselves are client components.
+- `/teacher`, `/teacher/add-student`, `/teacher/students/[id]` — teacher dashboard. All server components.
+- `/api/transcribe`, `/auth/callback` — supporting endpoints.
 
-1. **Home page** (`src/app/page.tsx`) — 14-day vertical timeline, progress from localStorage
-2. **Lesson route** (`src/app/lesson/[day]/page.tsx`) — SSG with `generateStaticParams` for days 1-14
-3. **LessonScreen** (`src/components/LessonScreen.tsx`) — wraps lesson session, requests mic, tracks time
-4. **BlendingExercise** (`src/components/BlendingExercise.tsx`) — core mechanic with two modes:
-   - **Speech mode** (mic granted): phoneme-play → phoneme-listen → phoneme-correct/skip → blending → word-play → word-listen → word-correct/skip → done
-   - **Tap mode** (fallback): tapping → blending → reveal → done
-5. **CelebrationScreen** (`src/components/CelebrationScreen.tsx`) — shown on lesson completion
+### Components
 
-### Phase 1a scaffolding (in progress)
-
-- `src/app/teacher/` — teacher dashboard routes
-- `src/app/signup/`, `src/app/login/`, `src/app/auth/` — account flow (teachers + parents)
-- `src/app/join/` — invite-link onboarding for students
-- `src/components/teacher/` — dashboard components
-- Activity components for Phonics / Spelling / Read Aloud are TBD; Phonics will wrap the existing `BlendingExercise` mechanic with the new content + reward shape.
+- `src/components/PetDisplay.tsx` — pet emoji + name + mood + coins.
+- `src/components/activities/PhonicsActivity.tsx` — wraps `BlendingExercise` for the practice flow.
+- `src/components/activities/SpellingActivity.tsx` — TTS-prompted typing.
+- `src/components/activities/ReadAloudActivity.tsx` — record passage to Whisper; non-authoritative.
+- `src/components/teacher/*` — `StudentCard`, `StatsBar`, `TagManager`, `FocusAreaToggle`, `PracticeHistory`.
+- `src/components/BlendingExercise.tsx` + `PhonemeCard.tsx` — the original phoneme blending mechanic; kept because PhonicsActivity uses it.
+- `src/components/SignOutButton.tsx` — tiny client wrapper around the server-action sign-out.
 
 ### Speech Pipeline
 
@@ -63,18 +63,18 @@ Speech output (TTS) uses browser Web Speech API:
 
 ### Data
 
-- `src/types/lesson.ts` — discriminated union: Phase1Lesson | Phase2Lesson | Phase3Lesson
-- `src/data/curriculum.ts` — 14 lessons, 3 phases, ~5 words/day with phoneme splits. This will become one content source in the broader starter library.
+- `src/types/database.ts` — TypeScript types matching the Supabase schema (`Profile`, `Student`, `FocusArea`, `InviteToken`, `PracticeSession`, `ActivityAttempt`, `Content`).
+- `src/lib/fixtures/student.ts` — source-of-truth content (phonics word lists, spelling word lists, read-aloud passages). Fed into the live DB via `scripts/seed-content.ts`. See "Practice content pipeline" section below.
 
-### Progress (Dual Layer)
+### Progress / tracking
 
-- **localStorage** (`src/lib/progress.ts`) — stores `{daysCompleted, wordsBlended}`, sequential unlock
-- **Supabase** (`src/lib/supabase/progress-sync.ts`) — optional cloud sync. Tables: `learners`, `progress` with RLS scoped to parent
+- `src/lib/tracker.ts` — `createSessionTracker(studentId)` returns either `NoopTracker` (when Supabase isn't configured) or `SupabaseTracker` (opens a `practice_sessions` row, writes `activity_attempts`, bumps `students.coins` on finish).
 
 ### Auth
 
-- Supabase Auth via `@supabase/ssr` with browser + server clients
-- `AuthProvider` context gracefully no-ops if Supabase env vars aren't set
+- Server-side throughout. Server components fetch the user via `await createClient()` from `@/lib/supabase/server` and call `supabase.auth.getUser()`. Mutations are server actions in `actions.ts` files alongside the page.
+- The browser supabase client (`@/lib/supabase/client`) exists only for the practice activity tracker (writes during a session). All auth-gated rendering goes through server components.
+- No AuthProvider, no useAuth, no client-side role checks. If you see those reappearing, that's a regression — see PR #4 (~commits c104108 + 41a0b53) for why.
 - Middleware refreshes sessions on every request
 
 ## Env Vars
@@ -124,6 +124,16 @@ After 4 weeks with wife's students: **≥60% complete practice 4+ days/week** (m
 3. **Pet system is a separate module** — activities emit reward events, pet system consumes them
 4. **Speech is non-authoritative for Read Aloud** — Whisper has not been validated with 6-8 year olds reading aloud; record + transcribe but do not pass/fail. Phonics blending speech (Phase 0 codebase) keeps its existing fuzzy matching
 
+## Practice content pipeline
+
+Practice content (phonics word lists, spelling word lists, read-aloud passages) flows: **fixtures → seed script → DB → runtime query**.
+
+- **Source of truth**: `src/lib/fixtures/student.ts` exports typed arrays (`fixturePhonicsContent`, `fixtureSpellingContent`, `fixtureReadAloudPassages`). Hand-edits here go to the repo, not the live app.
+- **Migration**: `scripts/seed-content.ts` reads the fixtures and emits idempotent SQL (`begin / delete from content where source='library' / insert / commit`). Apply with `scripts/db.sh -f <(npx tsx scripts/seed-content.ts)`.
+- **Runtime**: `src/app/student/practice/page.tsx` calls `src/lib/content.ts` (`getPhonicsContent`, `getSpellingContent`, `getReadAloudPassage`) which query the `content` table directly. Falls back to fixture defaults if DB returns nothing.
+- **Rotation**: `rotation = count(completed sessions for student) % matching.length`. Computed server-side.
+- **Generate new content**: invoke `/wordpets-content <type> <difficulty> <pattern>` — produces TS snippet + SQL grounded in Ilana's pedagogical principles. See `~/.claude/skills/wordpets-content/SKILL.md`.
+
 ## Teaching Resources KB (`kb/`)
 
 Queryable knowledge base of Ilana's curated teaching materials. See `kb/README.md`.
@@ -133,7 +143,7 @@ Queryable knowledge base of Ilana's curated teaching materials. See `kb/README.m
 - Principles layer: 10 pedagogical design principles extracted from Ilana's expert walkthrough sessions in `kb/extracted/principles/`. Transcripts in `kb/transcripts/`.
 - Run `PYTHONPATH=. python3 -m kb.scripts.extract` (incremental via sha256) → `PYTHONPATH=. python3 -m kb.scripts.index` (incremental via content hash, `--full-reindex` to rebuild)
 - Query via `PYTHONPATH=. python3 -m kb.scripts.query <curriculum|activities|principles> "question" [--grade K|1|2|3+] [--top N]`
-- Skills: `/curriculum-lookup` (what content), `/activity-ideas` (what activities), `/teaching-principles` (how/why to teach)
+- Skills: `/curriculum-lookup` (what content), `/activity-ideas` (what activities), `/teaching-principles` (how/why to teach), `/wordpets-content` (generate new practice content grounded in Ilana's principles)
 - Setup: Python 3.10+, then `cd kb && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`. All `kb.scripts.*` modules must be invoked from the repo root with `PYTHONPATH=.`.
 - Vision extraction uses `gpt-4o-mini` with `detail: "low"` (fixed 85 tokens/image) plus a 0.5s proactive throttle and 65s TPM-aware retry floor in `kb/scripts/extract_vision.py` — if you change these, expect 200k TPM rate-limits on bulk runs.
 - Needs `OPENAI_API_KEY`. Infisical's `blending-bootcamp` project key is currently out of credits; see Env Vars section above.

@@ -20,7 +20,7 @@ export default function ReadAloudActivity({
   onComplete,
 }: ReadAloudActivityProps) {
   const [recordState, setRecordState] = useState<RecordState>("idle");
-  const [transcript, setTranscript] = useState("");
+  // Transcript is sent to the tracker (server) and never displayed to the child (R17).
   const startedAtRef = useRef<number>(Date.now());
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -74,7 +74,6 @@ export default function ReadAloudActivity({
       }
     }
 
-    setTranscript(transcriptText);
     setRecordState("done");
 
     const duration = Math.round((Date.now() - startedAtRef.current) / 1000);
@@ -103,8 +102,10 @@ export default function ReadAloudActivity({
         </h2>
       </div>
 
-      <div className="w-full max-w-sm rounded-2xl bg-white px-6 py-5 shadow-sm">
-        <p className="text-center text-xl leading-relaxed font-semibold text-gray-800">
+      {/* R21 — passage typography: short line length, generous line height,
+        * left-aligned (never centered or justified). See docs/non-negotiable-rules.md. */}
+      <div className="w-full rounded-2xl bg-white px-6 py-5 shadow-sm">
+        <p className="passage text-xl font-semibold text-gray-800">
           {passage.text}
         </p>
       </div>
@@ -144,15 +145,13 @@ export default function ReadAloudActivity({
 
       {recordState === "done" && (
         <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+          {/* R17 — never show the raw Whisper transcript to the child.
+            * Transcript is still saved server-side for the teacher to review.
+            * R5 — no italics on child surfaces. */}
           <div className="rounded-2xl bg-green-50 px-5 py-4 text-center w-full">
             <p className="text-lg font-extrabold text-green-700">
               🌟 Great reading!
             </p>
-            {transcript && (
-              <p className="mt-2 text-xs text-gray-400 italic">
-                &ldquo;{transcript.slice(0, 100)}{transcript.length > 100 ? "…" : ""}&rdquo;
-              </p>
-            )}
           </div>
           <button
             onClick={handleFinish}
