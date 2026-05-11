@@ -2,10 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PracticeRunner from "./PracticeRunner";
 import {
-  pickPhonicsContent,
-  pickSpellingContent,
-  pickReadAloudPassage,
-} from "@/lib/fixtures/student";
+  getPhonicsContent,
+  getSpellingContent,
+  getReadAloudPassage,
+} from "@/lib/content";
 import type {
   Student,
   FocusAreaType,
@@ -63,9 +63,11 @@ export default async function PracticePage() {
   const spellingDifficulty = focusMap.get("spelling") ?? "beginner";
   const readAloudDifficulty = focusMap.get("read_aloud") ?? "beginner";
 
-  const phonicsContent = pickPhonicsContent(phonicsDifficulty, rotation);
-  const spellingContent = pickSpellingContent(spellingDifficulty, rotation);
-  const readAloudPassage = pickReadAloudPassage(readAloudDifficulty, rotation);
+  const [phonicsContent, spellingContent, readAloudPassage] = await Promise.all([
+    getPhonicsContent(supabase, phonicsDifficulty, rotation),
+    getSpellingContent(supabase, spellingDifficulty, rotation),
+    getReadAloudPassage(supabase, readAloudDifficulty, rotation),
+  ]);
 
   return (
     <PracticeRunner
