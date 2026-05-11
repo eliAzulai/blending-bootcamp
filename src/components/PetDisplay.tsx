@@ -51,7 +51,6 @@ interface PetDisplayProps {
   petType: PetType;
   petName: string;
   mood: PetMood;
-  coins: number;
   size?: "sm" | "lg";
   /** When true, plays a single bounce animation. Used by completion screen. */
   bouncing?: boolean;
@@ -61,7 +60,6 @@ export default function PetDisplay({
   petType,
   petName,
   mood,
-  coins,
   size = "lg",
   bouncing = false,
 }: PetDisplayProps) {
@@ -106,9 +104,6 @@ export default function PetDisplay({
           <p className="mt-1 text-base text-gray-600">{MOOD_LABEL[mood]}</p>
         )}
       </div>
-
-      {/* Coins — plain count, not a chip pill (R27: no game-economy framing) */}
-      <p className="text-sm font-bold text-amber-700">🪙 {coins}</p>
     </div>
   );
 }

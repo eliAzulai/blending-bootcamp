@@ -84,7 +84,6 @@ export default function PracticeRunner({
           petType={student.pet_type}
           petName={student.pet_name}
           mood="excited"
-          coins={student.coins + totalCoins}
           size="lg"
           bouncing
         />

@@ -83,7 +83,6 @@ export default async function StudentHomePage() {
             petType={student.pet_type}
             petName={student.pet_name}
             mood={student.pet_mood}
-            coins={student.coins}
             size="lg"
           />
 
