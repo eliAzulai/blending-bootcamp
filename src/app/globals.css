@@ -69,7 +69,39 @@ body {
 }
 
 /* =============================================
- * Card state animations
+ * Pet animations (R26 — motion budget: 1 calm idle, triggered feedback only)
+ * ============================================= */
+
+/* Idle breathe — applied to the pet body disc on /student. */
+@keyframes pet-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+.pet-breathe {
+  animation: pet-breathe 3s ease-in-out infinite;
+}
+
+/* One-shot bounce — triggered when bouncing prop is true on PetDisplay.
+ * Used on the practice completion screen. */
+@keyframes pet-bounce-once {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-14px); }
+  60% { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+.pet-bounce-once {
+  animation: pet-bounce-once 0.6s cubic-bezier(.34, 1.56, .64, 1) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-breathe,
+  .pet-bounce-once {
+    animation: none;
+  }
+}
+
+/* =============================================
+ * Card state animations (used by PhonemeCard / BlendingExercise)
  * ============================================= */
 
 /* Listening: breathing glow ring */
@@ -87,12 +119,8 @@ body {
 
 /* Listening: outer glow ring pulse */
 @keyframes card-glow-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4);
-  }
-  100% {
-    box-shadow: 0 0 0 16px rgba(13, 148, 136, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
+  100% { box-shadow: 0 0 0 16px rgba(13, 148, 136, 0); }
 }
 .animate-card-glow-ring {
   animation: card-glow-ring 1.5s ease-out infinite;
@@ -162,103 +190,6 @@ body {
 }
 
 /* =============================================
- * General UI animations
- * ============================================= */
-
-/* Pop-in */
-@keyframes pop-in {
-  0% { transform: scale(0); opacity: 0; }
-  70% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
-}
-.animate-pop-in {
-  animation: pop-in 0.4s ease-out forwards;
-}
-
-/* Slide together */
-@keyframes slide-together {
-  from { gap: 1.5rem; }
-  to { gap: 0.125rem; }
-}
-.animate-slide-together {
-  animation: slide-together 0.6s ease-out forwards;
-}
-
-/* Bounce in (celebration) */
-@keyframes bounce-in {
-  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
-  60% { transform: scale(1.2) rotate(5deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-.animate-bounce-in {
-  animation: bounce-in 0.6s ease-out forwards;
-}
-
-/* Confetti */
-@keyframes confetti-fall {
-  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-}
-.animate-confetti {
-  animation: confetti-fall 3s ease-in forwards;
-}
-
-/* Pulse glow */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(124, 58, 237, 0); }
-}
-.animate-pulse-glow {
-  animation: pulse-glow 1.5s ease-in-out infinite;
-}
-
-/* Star spin */
-@keyframes star-spin {
-  0% { transform: rotate(0deg) scale(0); }
-  50% { transform: rotate(180deg) scale(1.3); }
-  100% { transform: rotate(360deg) scale(1); }
-}
-.animate-star-spin {
-  animation: star-spin 0.8s ease-out forwards;
-}
-
-/* Mic button animations */
-@keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5); }
-  50% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
-}
-.animate-mic-pulse {
-  animation: mic-pulse 2s ease-in-out infinite;
-}
-
-@keyframes mic-listen {
-  0%, 100% { transform: scale(1.1); }
-  50% { transform: scale(1.18); }
-}
-.animate-mic-listen {
-  animation: mic-listen 0.8s ease-in-out infinite;
-}
-
-@keyframes mic-wave {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-.animate-mic-wave-1 { animation: mic-wave 1.5s ease-out infinite; }
-.animate-mic-wave-2 { animation: mic-wave 1.5s ease-out 0.3s infinite; }
-.animate-mic-wave-3 { animation: mic-wave 1.5s ease-out 0.6s infinite; }
-
-@keyframes mic-shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
-}
-.animate-mic-shake {
-  animation: mic-shake 0.5s ease-out;
-}
-
-/* =============================================
  * Listening indicator dot
  * ============================================= */
 
@@ -281,10 +212,9 @@ body {
 }
 
 /* =============================================
- * Word correct celebration
+ * Word correct celebration (BlendingExercise)
  * ============================================= */
 
-/* Word bounces in big, pulses, then settles */
 @keyframes celebrate-word {
   0% { transform: scale(0); opacity: 0; }
   30% { transform: scale(1.3); opacity: 1; }
@@ -297,7 +227,6 @@ body {
   animation: celebrate-word 0.8s cubic-bezier(.34, 1.56, .64, 1) forwards;
 }
 
-/* Message slides up with bounce */
 @keyframes celebrate-msg {
   0% { transform: translateY(20px) scale(0.8); opacity: 0; }
   50% { transform: translateY(-5px) scale(1.05); opacity: 1; }
@@ -307,7 +236,6 @@ body {
   animation: celebrate-msg 0.6s 0.3s cubic-bezier(.34, 1.56, .64, 1) both;
 }
 
-/* Stars burst upward then float down */
 @keyframes celebrate-star {
   0% { transform: translateY(0) scale(0) rotate(0deg); opacity: 0; }
   20% { transform: translateY(-40px) scale(1.3) rotate(90deg); opacity: 1; }

@@ -66,18 +66,19 @@ export default function PracticeRunner({
 
   if (pageState === "complete") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-amber-50 px-4 py-10 gap-8">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-amber-50 px-4 py-10 gap-6">
         <div className="text-center">
-          <div className="text-7xl mb-4">🎉</div>
+          <div className="text-7xl mb-2">🎉</div>
           <h1 className="text-3xl font-extrabold text-purple-700">
             Practice done!
           </h1>
-          <p className="mt-2 text-gray-500">
-            You earned{" "}
-            <span className="font-bold text-amber-600">{totalCoins} coins</span>{" "}
-            for {student.pet_name}!
-          </p>
         </div>
+
+        {/* Big coins number — clear and large per courtroom verdict.
+          * Pet bounces once to react. No coin-fly animation. */}
+        <p className="text-5xl font-extrabold text-amber-600">
+          +{totalCoins} 🪙
+        </p>
 
         <PetDisplay
           petType={student.pet_type}
@@ -85,11 +86,16 @@ export default function PracticeRunner({
           mood="excited"
           coins={student.coins + totalCoins}
           size="lg"
+          bouncing
         />
+
+        <p className="text-center text-base text-gray-600">
+          {student.pet_name} loved that!
+        </p>
 
         <button
           onClick={() => router.push("/student")}
-          className="w-full max-w-xs rounded-2xl bg-purple-600 px-6 py-4 text-xl font-extrabold text-white shadow-lg hover:bg-purple-700 active:scale-95 transition-transform"
+          className="min-h-12 w-full max-w-xs rounded-2xl bg-purple-600 px-6 py-4 text-xl font-extrabold text-white shadow-lg hover:bg-purple-700 active:scale-95 transition-transform"
         >
           Back to Home 🏠
         </button>

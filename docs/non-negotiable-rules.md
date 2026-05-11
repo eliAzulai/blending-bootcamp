@@ -150,7 +150,34 @@ Enforce via a `.passage` class in `globals.css` applied by the read-aloud compon
 
 **Problem.** Streak mechanics work for adults; for 6-8 year olds whose practice depends on a parent putting an iPad in their hand, broken streaks punish the kid for the parent's day. Industry retention data on under-10s shows streak loss is a churn driver.
 
-**Rule.** No UI surface in `/student/*` references missed days, broken streaks, or negative deltas. Pet "hunger" is a soft prompt to play, never a guilt cue. Positive framing only ("ready to play!" not "haven't seen you in 2 days"). Ban regex on copy review: `missed|broken|lost|haven't|been a while|where have you`.
+**Rule.** No UI surface in `/student/*` references missed days, broken streaks, or negative deltas. Pet "hunger" is a soft prompt to play, never a guilt cue. Positive framing only ("ready to play!" not "haven't seen you in 2 days"). Ban regex on copy review: `missed|broken|lost|haven't|been a while|where have you|come back|tomorrow`.
+
+## R26 — Motion budget
+
+**Problem.** Continuous animation competes with decoding attention. A pet wiggling in the corner of a Phonics activity is worse than a static pet — the child's eye is pulled off the phoneme card and onto the motion. The dyslexia literature is consistent on this.
+
+**Rule.**
+
+- `/student` (home): at most **one calm idle animation** on the pet (breathe). No bouncing pet. No coin animation. No streak fire flicker.
+- `/student/practice/*` (any activity in progress): **no idle animation** anywhere. Triggered feedback only — pet bounces *after* a correct answer or session completion, never during a reading task.
+- Activity transitions: prefer instant swap. If a transition is added later, it must be ≤200ms and fade-only (no slide, no scale).
+- All animations pause under `prefers-reduced-motion: reduce` (already enforced for `.pet-breathe` and `.pet-bounce-once`).
+
+Background motion (subtle gradient sway, etc.) is forbidden on child surfaces in Phase 1a.
+
+## R27 — No game-economy framing
+
+**Problem.** Pet apps drift into "currency dashboard" territory: total coins earned, daily yield, leaderboard, "your wealth", spending hubs, trade rooms. That's the wrong mental model for a literacy app — it teaches that practicing is a means to economic ends rather than a thing kids do for the pet.
+
+**Rule.** **Coins as feedback are fine** — "+5 coins!" after a session is the spec'd reward. What is forbidden:
+
+- Total-earnings dashboards or stats pages on `/student/*`.
+- Leaderboards comparing children to each other.
+- A "store" UI on the child surface (deferred to Phase 1b's optional pet outfits — and even then, framed as gifts, not purchases).
+- Streak chips styled like an XP bar, level counter, or game HUD.
+- Language like "wealth", "income", "spending", "earnings report" anywhere on child surfaces.
+
+Plain coin counts and "+N coins!" feedback are explicitly allowed. The boundary is *dashboard vs feedback*.
 
 ---
 
@@ -167,6 +194,8 @@ Enforce via a `.passage` class in `globals.css` applied by the read-aloud compon
 | Audio (R10) | Lock TTS voice in `src/lib/speech.ts`. |
 | Transcript scope (R17) | Code review: any component receiving a `transcript` prop or rendering `attempt.transcript` from `/student/*` is a violation. |
 | Determinism (R24) | `src/lib/content.ts` picker functions take `(supabase, difficulty, rotation)` and return deterministic results. No `Math.random()` or per-render shuffles inside child render paths. |
-| Streak copy (R25) | Code review on `PetDisplay`, mood-string maps, and any `/student/*` copy. Ban regex: `missed\|broken\|lost\|haven't`. |
+| Streak copy (R25) | Code review on `PetDisplay`, mood-string maps, and any `/student/*` copy. Ban regex: `missed\|broken\|lost\|haven't\|come back\|tomorrow`. |
+| Motion budget (R26) | Only `.pet-breathe` on `/student`. No idle animations on `/student/practice/*`. `prefers-reduced-motion` gates `.pet-breathe` and `.pet-bounce-once` in `globals.css`. |
+| No game-economy framing (R27) | Code review on `/student/*`. Coins must be a plain count, not a chip pill / HUD / leaderboard / dashboard. |
 | Code review | Any PR touching `globals.css`, `layout.tsx`, fixtures, speech, or pet/streak copy that reintroduces forbidden patterns should be flagged. |
 | Future: ESLint rule | `no-restricted-syntax` for `font-family: system-ui` strings; ban `dark:` Tailwind classes inside `src/app/student/`; ban `transcript` references on `src/app/student/**`. |
