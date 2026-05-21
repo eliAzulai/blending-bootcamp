@@ -14,9 +14,15 @@ export default function TeacherLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!user || role !== "teacher")) {
-      router.push("/login");
-    }
+    if (loading) return;
+    if (user && role === "teacher") return;
+    // user exists but role hasn't loaded yet → fetchProfile is in flight; wait it out
+    if (user && role === null) return;
+    // No user, or wrong role: defer redirect — onAuthStateChange + fetchProfile
+    // can take >1s on slow networks (Sydney pooler RTT). Without this delay the
+    // layout briefly sees user=null and bounces back to /login on fresh signup.
+    const timer = setTimeout(() => router.push("/login"), 2500);
+    return () => clearTimeout(timer);
   }, [user, role, loading, router]);
 
   if (loading) {

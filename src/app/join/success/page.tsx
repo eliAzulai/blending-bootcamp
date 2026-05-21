@@ -1,8 +1,10 @@
+import { CelebrationMark } from "@/components/ui/StickerMarks";
+
 export default function JoinSuccessPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-xl">
-        <div className="mb-4 text-6xl">🎉</div>
+        <CelebrationMark className="mx-auto mb-4" />
         <h1 className="mb-2 text-2xl font-extrabold text-purple-700">
           All Set!
         </h1>

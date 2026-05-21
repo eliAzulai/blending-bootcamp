@@ -45,7 +45,7 @@ npm run dev                        # http://localhost:3000
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | Yes | Server-side Whisper transcription |
 | `NEXT_PUBLIC_SUPABASE_URL` | No | Supabase project URL (enables cloud sync) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No | Supabase anon key |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | No | Supabase publishable key (new naming; `sb_publishable_...`) |
 
 Without Supabase vars, the Phase 0 app works fully offline using localStorage for progress. Phase 1a (teacher dashboard, students, invites) requires Supabase.
 

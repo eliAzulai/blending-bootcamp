@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function TeacherSignupPage() {
   const [name, setName] = useState("");
@@ -12,6 +13,7 @@ export default function TeacherSignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { refreshProfile } = useAuth();
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -44,6 +46,12 @@ export default function TeacherSignupPage() {
         setLoading(false);
         return;
       }
+
+      // AuthProvider raced its initial profile fetch and got HTTP 406 (no rows)
+      // before this insert. Force it to re-query (with explicit userId in case
+      // its `user` state hasn't updated yet) before navigating, otherwise
+      // TeacherLayout sees role=null and renders blank.
+      await refreshProfile(authData.user.id);
 
       router.push("/teacher");
       router.refresh();

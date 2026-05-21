@@ -1,16 +1,19 @@
 "use client";
 
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { petStickerFor } from "@/lib/pet-assets";
 import { PET_EMOJI, DEFAULT_FOCUS_AREAS, type PetType } from "@/types/database";
 
 const PETS: { type: PetType; label: string }[] = [
   { type: "cat", label: "Cat" },
   { type: "dog", label: "Dog" },
-  { type: "guinea_pig", label: "Guinea Pig" },
+  { type: "guinea_pig", label: "Hamster" },
   { type: "bird", label: "Bird" },
   { type: "bunny", label: "Bunny" },
+  { type: "penguin", label: "Penguin" },
 ];
 
 export default function PetSelectPage() {
@@ -63,23 +66,37 @@ export default function PetSelectPage() {
           This pet will be your learning buddy
         </p>
 
-        <div className="mb-6 grid grid-cols-5 gap-2">
-          {PETS.map((pet) => (
-            <button
-              key={pet.type}
-              onClick={() => setSelected(pet.type)}
-              className={`flex flex-col items-center rounded-xl p-3 transition-all ${
-                selected === pet.type
-                  ? "bg-purple-100 ring-2 ring-purple-500 scale-110"
-                  : "bg-gray-50 hover:bg-gray-100"
-              }`}
-            >
-              <span className="text-3xl">{PET_EMOJI[pet.type]}</span>
-              <span className="mt-1 text-[10px] font-medium text-gray-600">
-                {pet.label}
-              </span>
-            </button>
-          ))}
+        <div className="mb-6 grid grid-cols-3 gap-2">
+          {PETS.map((pet) => {
+            const stickerSrc = petStickerFor(pet.type);
+
+            return (
+              <button
+                key={pet.type}
+                onClick={() => setSelected(pet.type)}
+                className={`flex flex-col items-center rounded-xl p-3 transition-all ${
+                  selected === pet.type
+                    ? "bg-purple-100 ring-2 ring-purple-500 scale-110"
+                    : "bg-gray-50 hover:bg-gray-100"
+                }`}
+              >
+                {stickerSrc ? (
+                  <Image
+                    src={stickerSrc}
+                    alt={pet.label}
+                    width={56}
+                    height={56}
+                    className="h-12 w-12 object-contain"
+                  />
+                ) : (
+                  <span className="text-3xl">{PET_EMOJI[pet.type]}</span>
+                )}
+                <span className="mt-1 text-[10px] font-medium text-gray-600">
+                  {pet.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {selected && (

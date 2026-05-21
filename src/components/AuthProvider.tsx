@@ -11,7 +11,7 @@ interface AuthContextType {
   role: Role | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (userId?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -47,8 +47,9 @@ export default function AuthProvider({
     setProfile(data as Profile | null);
   }
 
-  async function refreshProfile() {
-    if (user) await fetchProfile(user.id);
+  async function refreshProfile(userId?: string) {
+    const id = userId ?? user?.id;
+    if (id) await fetchProfile(id);
   }
 
   useEffect(() => {

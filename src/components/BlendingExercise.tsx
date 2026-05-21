@@ -452,18 +452,16 @@ export default function BlendingExercise({
             {message}
           </span>
           {/* Stars bursting out */}
-          <div className="relative h-16 w-64 flex items-center justify-center">
-            {["🌟", "⭐", "✨", "🎉", "⭐", "🌟", "✨"].map((emoji, i) => (
+          <div className="relative h-16 w-64 flex items-center justify-center" aria-hidden>
+            {["bg-amber-300", "bg-teal-300", "bg-pink-300", "bg-purple-300", "bg-amber-300", "bg-teal-300", "bg-pink-300"].map((color, i) => (
               <span
                 key={i}
-                className="absolute text-2xl animate-celebrate-star"
+                className={`absolute h-4 w-4 rounded-full shadow-sm animate-celebrate-star ${color}`}
                 style={{
                   animationDelay: `${i * 0.12}s`,
                   left: `${10 + i * 13}%`,
                 }}
-              >
-                {emoji}
-              </span>
+              />
             ))}
           </div>
         </div>

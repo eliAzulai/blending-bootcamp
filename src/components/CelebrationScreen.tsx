@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CelebrationMark } from "@/components/ui/StickerMarks";
 
 interface CelebrationScreenProps {
   wordsBlended: number;
@@ -41,10 +42,7 @@ export default function CelebrationScreen({
           visible ? "scale-100 opacity-100" : "scale-50 opacity-0",
         ].join(" ")}
       >
-        {/* Star burst emoji (system font, universally supported) */}
-        <span className="text-8xl" role="img" aria-label="star">
-          &#11088;
-        </span>
+        <CelebrationMark />
 
         <h1 className="text-center text-5xl font-extrabold text-purple-700">
           You did it!

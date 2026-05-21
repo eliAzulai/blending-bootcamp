@@ -3,9 +3,11 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 import type { InviteToken } from "@/types/database";
 
 export default function JoinPage() {
+  const { refreshProfile } = useAuth();
   const params = useParams<{ token: string }>();
   const token = params.token;
   const router = useRouter();
@@ -96,6 +98,10 @@ export default function JoinPage() {
       .from("invite_tokens")
       .update({ used: true, used_by: parentId })
       .eq("id", invite.id);
+
+    // See note in src/app/signup/page.tsx — AuthProvider's onAuthStateChange
+    // raced the profile insert and cached profile=null. Force a re-fetch.
+    await refreshProfile(parentId);
 
     router.push(`/join/${token}/pet-select?student=${student.id}`);
   }

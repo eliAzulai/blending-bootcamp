@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { petStickerFor } from "@/lib/pet-assets";
 import { PET_EMOJI, type PetType, type Tag } from "@/types/database";
 
 interface StudentCardProps {
@@ -31,14 +33,27 @@ export default function StudentCard({
   const bgClass = isInactive
     ? "bg-red-50 border-red-200"
     : "bg-white border-gray-200";
+  const stickerSrc = petStickerFor(petType);
 
   return (
     <Link
       href={`/teacher/students/${id}`}
       className={`flex items-center gap-3 rounded-xl border p-4 transition-shadow hover:shadow-md ${bgClass}`}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-xl">
-        {PET_EMOJI[petType] ?? "🐾"}
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
+        {stickerSrc ? (
+          <Image
+            src={stickerSrc}
+            alt={`${petName} the ${petType}`}
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+          />
+        ) : (
+          <span className="text-[10px] font-bold text-purple-700">
+            {PET_EMOJI[petType] ?? "Pet"}
+          </span>
+        )}
       </div>
       <div className="flex-1">
         <div className="text-sm font-semibold text-gray-900">{name}</div>

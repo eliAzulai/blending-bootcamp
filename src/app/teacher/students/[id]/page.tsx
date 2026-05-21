@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import FocusAreaToggle from "@/components/teacher/FocusAreaToggle";
 import TagManager from "@/components/teacher/TagManager";
+import { petStickerFor } from "@/lib/pet-assets";
 import { PET_EMOJI, type Student, type FocusArea, type Tag } from "@/types/database";
 import Link from "next/link";
 
@@ -62,6 +64,8 @@ export default function StudentDetailPage() {
     return <p className="py-12 text-center text-gray-400">Loading...</p>;
   }
 
+  const stickerSrc = petStickerFor(student.pet_type);
+
   return (
     <div className="space-y-6">
       <Link
@@ -72,8 +76,20 @@ export default function StudentDetailPage() {
       </Link>
 
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-100 text-4xl">
-          {PET_EMOJI[student.pet_type] ?? "🐾"}
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-100">
+          {stickerSrc ? (
+            <Image
+              src={stickerSrc}
+              alt={`${student.pet_name} the ${student.pet_type}`}
+              width={64}
+              height={64}
+              className="h-16 w-16 object-contain"
+            />
+          ) : (
+            <span className="text-xs font-bold text-purple-700">
+              {PET_EMOJI[student.pet_type] ?? "Pet"}
+            </span>
+          )}
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{student.name}</h1>

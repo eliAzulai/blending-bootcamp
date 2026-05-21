@@ -26,7 +26,7 @@ create table if not exists students (
   teacher_id uuid references auth.users(id) on delete set null,
   name text not null,
   age integer not null check (age >= 3 and age <= 18),
-  pet_type text not null default 'cat' check (pet_type in ('cat', 'dog', 'guinea_pig', 'bird', 'bunny')),
+  pet_type text not null default 'cat' check (pet_type in ('cat', 'dog', 'guinea_pig', 'bird', 'bunny', 'penguin')),
   pet_name text not null default 'My Pet',
   pet_mood text not null default 'happy' check (pet_mood in ('happy', 'hungry', 'sleepy', 'excited')),
   coins integer not null default 0,
@@ -76,6 +76,11 @@ create policy "Teachers manage focus areas" on focus_areas for all
   using (exists (select 1 from students s where s.id = student_id and s.teacher_id = auth.uid()));
 create policy "Parents read child focus areas" on focus_areas for select
   using (exists (select 1 from students s where s.id = student_id and s.parent_id = auth.uid()));
+-- Parents need INSERT/UPDATE/DELETE during onboarding (pet-select inserts default focus areas).
+-- Without this, the join flow hits a 403 and focus areas are never created.
+create policy "Parents manage own child focus areas" on focus_areas for all
+  using (exists (select 1 from students s where s.id = student_id and s.parent_id = auth.uid()))
+  with check (exists (select 1 from students s where s.id = student_id and s.parent_id = auth.uid()));
 
 -- INVITE TOKENS
 create table if not exists invite_tokens (
