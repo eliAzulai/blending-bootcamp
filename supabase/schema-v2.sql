@@ -26,7 +26,7 @@ create table if not exists students (
   teacher_id uuid references auth.users(id) on delete set null,
   name text not null,
   age integer not null check (age >= 3 and age <= 18),
-  pet_type text not null default 'cat' check (pet_type in ('cat', 'dog', 'guinea_pig', 'bird', 'bunny', 'penguin')),
+  pet_type text not null default 'cat' check (pet_type in ('cat', 'dog', 'guinea_pig', 'bird', 'bunny')),
   pet_name text not null default 'My Pet',
   pet_mood text not null default 'happy' check (pet_mood in ('happy', 'hungry', 'sleepy', 'excited')),
   coins integer not null default 0,

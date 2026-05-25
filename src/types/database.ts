@@ -10,7 +10,7 @@ export interface Profile {
   created_at: string;
 }
 
-export type PetType = "cat" | "dog" | "guinea_pig" | "bird" | "bunny" | "penguin";
+export type PetType = "cat" | "dog" | "guinea_pig" | "bird" | "bunny";
 export type PetMood = "happy" | "hungry" | "sleepy" | "excited";
 
 export interface Student {
@@ -87,10 +87,9 @@ export const FOCUS_AREA_LABELS: Record<FocusAreaType, string> = {
 };
 
 export const PET_EMOJI: Record<PetType, string> = {
-  cat: "Cat",
-  dog: "Dog",
-  guinea_pig: "Hamster",
-  bird: "Bird",
-  bunny: "Bunny",
-  penguin: "Penguin",
+  cat: "🐱",
+  dog: "🐕",
+  guinea_pig: "🐹",
+  bird: "🐦",
+  bunny: "🐰",
 };

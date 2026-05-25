@@ -31,9 +31,8 @@ class NoopTracker implements SessionTracker {
   }
 }
 
-// Direct REST writes — bypasses the supabase JS client which can hang on
-// `_useSession` when a prior auth call was aborted by navigation. See the long
-// comment in `src/lib/student-data.ts` for the lock-key explanation.
+// Direct REST writes bypass the Supabase JS client's session lock, which can
+// hang after an aborted navigation. This keeps the child practice loop moving.
 
 function readAccessTokenFromCookie(): string | null {
   if (typeof document === "undefined") return null;
