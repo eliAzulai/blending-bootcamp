@@ -28,6 +28,52 @@ WordPets — a companion practice app assigned by a teacher (Eli's wife, Ilana) 
 
 **Decision log:** The pivot from Phase 0 → Phase 1a was made on 2026-04-14 (resolved in the design spec) and formally documented on 2026-04-22. Phase 0 is kept because (a) its speech pipeline + phoneme matching is the foundation Phase 1a builds on, and (b) it's the historical proof that the core mechanic works.
 
+## Agentic-first stage
+
+> Lifecycle declaration. Read at brainstorming. Update via deliberate lifecycle review, not feature work. Reference: `~/.claude/agentic-first-stages.md` (full stage definitions — do **not** navigate during feature work; this declaration is the contract).
+
+**Currently:** Stage 2 — Prototype / Alpha
+**Last reviewed:** 2026-05-05
+**Next review:** 2026-06-05 (monthly cadence) or earlier if (a) eval set hits its first regression, (b) a feature ask wants something on the "Not yet" list, (c) Phase 1a metric (≥60% practice 4+ days/week) reads back.
+
+**The closed loop:** Student opens companion app → completes assigned activity → earns pet reward → teacher sees who practiced and what they struggled with.
+
+### In scope (Stage 2 "Must do")
+
+- Loop closes end-to-end on one substrate (web + Supabase, picked)
+- Intent schema + inference pipeline, even crude (assignment → activity → reward shape)
+- Show-don't-ask renderer for primary forks (e.g., assignment preview before student starts)
+- Issues filed (assignments tracked in Supabase as durable units)
+- Acceptance criteria checked, manual OK (success metric: ≥60% of wife's students practice 4+ days/week after 4 weeks)
+- Reversibility on writes (undo for teacher, draft mode where applicable)
+- Cold-start path (brand new student opening app for first time, empty memory)
+- Manual eval set (~20 representative student scenarios walked through end-to-end)
+
+### Not yet (defer until Stage 3+)
+
+- Capability token service (Stage 3)
+- Policy engine in code (Stage 3)
+- Trust ledger v1 (Stage 3)
+- Operator dashboard v1 — note: a *minimal* teacher dashboard exists, keep it minimal (Stage 3 is when it earns operator-grade features)
+- Slop telemetry pipeline (Stage 3)
+- Held-out eval set in CI (Stage 3)
+- Substrate router (Stage 3)
+- Multi-agent coordination (Stage 4)
+- Background / continuous loops (Stage 4)
+- Loop budgets (Stage 4)
+- Multi-user / household model (Stage 4 — wordpets has multi-user feel via teacher+student, but a single principal per loop)
+- Third-party agent integration (Stage 4)
+- Production observability stack (Stage 4)
+
+### Exit gate (advance to Stage 3 when all four are true)
+
+1. Loop closes for the happy path on real input, end-to-end (real student → real activity → real reward → teacher sees it)
+2. Cold-start works for at least one realistic new-student scenario
+3. The eval set runs and we can name the failure modes
+4. Reversibility demonstrated by deliberately running a wrong action and rolling it back
+
+If a feature ask requires something on the "Not yet" list, brainstorming should refuse — decompose the feature, defer the future-stage capability, or schedule a lifecycle review to consider stage advancement. Do not pull future-stage capability into a current-stage feature.
+
 ## Architecture
 
 ### Phase 0 codebase (frozen — reference only)
