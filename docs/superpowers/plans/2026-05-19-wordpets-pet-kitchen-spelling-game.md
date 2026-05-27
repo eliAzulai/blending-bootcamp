@@ -1,5 +1,11 @@
 # WordPets Pet Kitchen Spelling Game Implementation Plan
 
+> **Current status as of 2026-05-27:** Historical/deferred. Do not execute this
+> plan as-is. Pet Kitchen implementation/assets/tests were removed from current
+> `main` during the source-of-truth reconciliation, and this plan still references
+> older route shapes such as `/student/[id]`. Re-scope from the current
+> `/student/practice` architecture before doing any Pet Kitchen work.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the plain Spelling practice screen with Pet Kitchen, where children spell words to cook snacks and feed their pet.

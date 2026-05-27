@@ -1,9 +1,14 @@
 # Pet Kitchen Playtest Checklist
 
 **Date:** 2026-05-19  
+**Status:** Historical/deferred — Pet Kitchen is not current implementation scope as of 2026-05-27  
 **Target:** WordPets Phase 1a, ages 6-8  
 **Session length:** 5-10 minutes  
 **Tester:** Ilana, Eli, or parent watching quietly
+
+> Do not use this as an active playtest checklist unless Eli explicitly
+> re-scopes Pet Kitchen and the feature exists again in the current
+> `/student/practice` app.
 
 ## Setup
 
@@ -81,4 +86,3 @@ What made them smile:
 What they ignored:
 
 What to change before the next playtest:
-

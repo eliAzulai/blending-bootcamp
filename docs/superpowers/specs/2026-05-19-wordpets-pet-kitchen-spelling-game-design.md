@@ -1,7 +1,7 @@
 # WordPets Pet Kitchen Spelling Game Design
 
 **Date:** 2026-05-19
-**Status:** Approved concept, ready for implementation planning
+**Status:** Historical/deferred concept — not current implementation scope
 **Project:** `/Users/eliHome/projects/wordpets`
 **Related specs:**
 - `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`
@@ -9,9 +9,16 @@
 
 ---
 
+> **Current status as of 2026-05-27:** Pet Kitchen was explored as a possible
+> Phase 1a spelling wrapper, but it is not active scope. The implementation,
+> assets, and smoke tests were removed from current `main` during the
+> source-of-truth reconciliation. Do not treat this document as an implementation
+> directive unless Eli explicitly re-scopes Pet Kitchen against the current
+> `/student/practice` architecture and Phase 1a validation metric.
+
 ## Product Decision
 
-Pet Kitchen is the first production "game" for WordPets.
+Pet Kitchen was proposed as a first production "game" for WordPets.
 
 It is not a separate mini-game shelf, pet room, inventory system, or Phase 1b
 reward world. It is the Phase 1a Spelling activity redesigned as a tight

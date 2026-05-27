@@ -28,52 +28,38 @@ WordPets — a companion practice app assigned by a teacher (Eli's wife, Ilana) 
 
 **Target users (Phase 1a):** English-speaking children living in Israel ages 6-8. They speak/understand English fluently but struggle with reading and writing.
 
-## Status (as of 2026-04-22)
+**Blending Bootcamp scope fence:** The repo, Infisical project, and some old docs still use the legacy `blending-bootcamp` name because WordPets started as a 14-day bootcamp prototype. That is history and infrastructure naming only. Do not rebuild the self-service bootcamp, `/lesson/[day]`, localStorage progress timelines, Phase 0 routes, or standalone B2C flow unless Eli explicitly re-scopes it. Current product work is WordPets Phase 1a.
+
+## Status (as of 2026-05-27)
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| **Phase 0 — Blending Bootcamp MVP** | 14-day phonics blending program, ages 5-7, self-service | **SHELVED as starting point.** Code preserved (see "Phase 0 codebase" below). Do NOT actively iterate. Treat as a working reference for the speech/blending mechanic that gets reused inside Phase 1a. |
-| **Phase 1a — Companion App MVP** | Teacher-assigned practice for wife's students (ages 6-8). 3 activities (Phonics, Spelling, Read Aloud), thin pet system, minimal teacher dashboard. | **ACTIVE.** Authoritative spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Skeleton scaffolded in `src/app/teacher/`, `src/app/join/`, `src/app/signup/`, `src/components/teacher/`. |
-| **Phase 1b — Earn Expansion** | More activities, pet room/outfits/evolution, ages 9-12, parent summaries | Deferred — only if 1a validates (≥60% of wife's students practice 4+ days/week after 4 weeks). |
-| **Phase 2+** | Live teaching platform, teacher SaaS, standalone B2C | Out of scope for this codebase right now. |
+| **Phase 1a — Companion App** | Teacher-assigned practice for Ilana's students (ages 6-8). 3 activities (Phonics, Spelling, Read Aloud), thin pet system, minimal teacher dashboard. | **LIVE** at https://app.wordpets.xyz. Authoritative spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-design.md`. Success metric: >=60% practicing 4+ days/week after 4 weeks. |
+| **Phase 1b — Earn Expansion** | More activities, pet room/outfits/evolution, ages 9-12, parent summaries | Deferred — only triggered if 1a hits its metric. |
+| **Phase 2+** | Live teaching platform, teacher SaaS, standalone B2C | Out of scope for this codebase. |
 
-**Decision log:** The pivot from Phase 0 → Phase 1a was made on 2026-04-14 (resolved in the design spec) and formally documented on 2026-04-22. Phase 0 is kept because (a) its speech pipeline + phoneme matching is the foundation Phase 1a builds on, and (b) it's the historical proof that the core mechanic works.
+The original **Phase 0 — Blending Bootcamp** was the starting point of this repo. As of 2026-05-11 its routes and supporting files have been removed; only the reusable mechanic survives: `BlendingExercise.tsx`, `PhonemeCard.tsx`, `useSpeechRecognition.ts`, `phoneme-matching.ts`, and `speech.ts`. Those are used by `PhonicsActivity` inside the Phase 1a practice loop. There is no longer a "Phase 0 codebase to preserve".
 
 ## Architecture
 
-### Phase 0 codebase (frozen — reference only)
+### Routes (Phase 1a — current)
 
-The original Blending Bootcamp MVP. Don't add features here; reuse pieces inside Phase 1a activities.
+- `/` — server-rendered landing page. Routes signed-in users to their role-appropriate home.
+- `/signup`, `/login` — server actions; no AuthProvider.
+- `/join/[token]`, `/join/[token]/pet-select`, `/join/success` — parent join flow.
+- `/student`, `/student/practice` — child home + practice runner. Both server components; activities themselves are client components.
+- `/teacher`, `/teacher/add-student`, `/teacher/students/[id]` — teacher dashboard. All server components.
+- `/api/transcribe`, `/auth/callback` — supporting endpoints.
 
-1. **Home page** (`src/app/page.tsx`) — 14-day vertical timeline, progress from localStorage
-2. **Lesson route** (`src/app/lesson/[day]/page.tsx`) — SSG with `generateStaticParams` for days 1-14
-3. **LessonScreen** (`src/components/LessonScreen.tsx`) — wraps lesson session, requests mic, tracks time
-4. **BlendingExercise** (`src/components/BlendingExercise.tsx`) — core mechanic with two modes:
-   - **Speech mode** (mic granted): phoneme-play → phoneme-listen → phoneme-correct/skip → blending → word-play → word-listen → word-correct/skip → done
-   - **Tap mode** (fallback): tapping → blending → reveal → done
-5. **CelebrationScreen** (`src/components/CelebrationScreen.tsx`) — shown on lesson completion
+### Components
 
-### Phase 1a scaffolding (in progress)
-
-- `src/app/teacher/` — teacher dashboard routes
-- `src/app/signup/`, `src/app/login/`, `src/app/auth/` — account flow (teachers + parents)
-- `src/app/join/` — invite-link onboarding for students
-- `src/components/teacher/` — dashboard components
-- Phonics activity is **built** (wraps existing `BlendingExercise` with content cycling + scoring); Spelling and Read Aloud are TBD.
-
-### Phase 1a building blocks (child practice loop)
-
-The data layer was deliberately built with **two co-existing branches** — Supabase live and fixture demo — both checked at runtime via `supabaseIsConfigured()`. Fixtures are not scaffolding to be deleted; they're a permanent dev/demo escape hatch. Demo URL: `/student/fixture-student-1` works regardless of Supabase state because `getStudent` short-circuits on the fixture id (a non-uuid string that would otherwise blow up against the `uuid` column).
-
-- `src/lib/student-data.ts` — `getStudent(id)`, `getPhonicsContent()`. Each branches on Supabase config; falls back to fixture if query fails or returns nothing.
-- `src/lib/tracker.ts` — `createSessionTracker(studentId)` returns `NoopTracker` (logs to console) or `SupabaseTracker` (opens a `practice_sessions` row, writes `activity_attempts`, finalizes with coin total + duration, bumps `students.coins`) based on env. Read-modify-write on coins is acceptable for Phase 1a single-tab usage.
-- `src/lib/fixtures/student.ts` — fixture student "Alex" + cat "Whiskers", two phonics word lists (`-at` and `-it` families) lifted from `src/data/curriculum.ts`. Mirrors the seeded `content` rows in the live DB.
-- `src/components/PetDisplay.tsx` — emoji + name + mood label + coin counter. Mood-colored background.
-- `src/components/activities/PhonicsActivity.tsx` — wraps `BlendingExercise`, cycles N words, records each attempt as `activity_attempts` (score=100 per completed word — `BlendingExercise` is encouragement-first and doesn't surface pass/fail), awards 2 coins per word.
-- `src/app/student/[id]/page.tsx` — child home: pet + "Today's practice" → Phonics card.
-- `src/app/student/[id]/practice/phonics/page.tsx` — mic permission prompt → activity → completion screen with coin total. Loads student + content in parallel via `Promise.all`.
-- `supabase/schema-v2.sql` — current schema (9 tables, RLS on all).
-- `supabase/seed.sql` — Phase 1a starter library content (idempotent via slug-keyed delete-then-insert). Live DB has 2 phonics wordlists seeded (`phonics-cvc-at`, `phonics-cvc-it`).
+- `src/components/PetDisplay.tsx` — pet emoji + name + mood + coins.
+- `src/components/activities/PhonicsActivity.tsx` — wraps `BlendingExercise` for the practice flow.
+- `src/components/activities/SpellingActivity.tsx` — TTS-prompted typing.
+- `src/components/activities/ReadAloudActivity.tsx` — records passage to Whisper; non-authoritative.
+- `src/components/teacher/*` — `StudentCard`, `StatsBar`, `TagManager`, `FocusAreaToggle`, `PracticeHistory`.
+- `src/components/BlendingExercise.tsx` + `PhonemeCard.tsx` — the original phoneme blending mechanic; kept because `PhonicsActivity` uses it.
+- `src/components/SignOutButton.tsx` — tiny client wrapper around the server-action sign-out.
 
 ### Speech Pipeline
 
@@ -88,14 +74,19 @@ Speech output (TTS) uses browser Web Speech API:
 
 ### Data
 
-- `src/types/lesson.ts` — discriminated union: Phase1Lesson | Phase2Lesson | Phase3Lesson
-- `src/data/curriculum.ts` — 14 lessons, 3 phases, ~5 words/day with phoneme splits. This will become one content source in the broader starter library.
+- `src/types/database.ts` — TypeScript types matching the Supabase schema (`Profile`, `Student`, `FocusArea`, `InviteToken`, `PracticeSession`, `ActivityAttempt`, `Content`).
+- `src/lib/fixtures/student.ts` — source-of-truth content (phonics word lists, spelling word lists, read-aloud passages). Fed into the live DB via `scripts/seed-content.ts`. See "Practice content pipeline" below.
+
+### Progress / tracking
+
+- `src/lib/tracker.ts` — `createSessionTracker(studentId)` returns either `NoopTracker` (when Supabase is not configured) or `SupabaseTracker` (opens a `practice_sessions` row, writes `activity_attempts`, bumps `students.coins` on finish).
 
 ### Auth
 
-- Supabase Auth via `@supabase/ssr` with browser + server clients
-- `AuthProvider` context gracefully no-ops if Supabase env vars aren't set
-- Middleware refreshes sessions on every request
+- Server-side throughout. Server components fetch the user via `await createClient()` from `@/lib/supabase/server` and call `supabase.auth.getUser()`. Mutations are server actions in `actions.ts` files alongside the page.
+- The browser Supabase client (`@/lib/supabase/client`) exists only for the practice activity tracker. All auth-gated rendering goes through server components.
+- No AuthProvider, no `useAuth`, no client-side role checks. If you see those reappearing, that is a regression.
+- Middleware refreshes sessions on every request.
 
 ## Env Vars
 
@@ -120,24 +111,13 @@ Speech output (TTS) uses browser Web Speech API:
 
 ## Architectural gotchas (load-bearing)
 
-These were discovered during the Phase 1a smoke-test session (2026-04-26). Removing or "simplifying" them will break onboarding.
+### Server auth is the current architecture
 
-### Auth state propagates async after signup
+Old docs and plans may mention `AuthProvider`, `useAuth`, `/student/[id]`, or per-activity nested routes like `/student/[id]/practice/phonics`. Those are historical. The current app uses server components plus server actions, with `/student` and `/student/practice` as the child-facing routes. Reintroducing client-side auth guards or id-in-path student routes should be treated as a regression unless explicitly re-scoped.
 
-`supabase.auth.signUp()` returns before AuthProvider's `onAuthStateChange` fires with the new user. Two consequences:
+### Practice tracking still uses the browser client
 
-1. **Don't redirect immediately when `loading=false && !user`.** `src/app/teacher/layout.tsx` defers the `/login` push by 2.5s via a `setTimeout` whose cleanup cancels if `user` arrives in the meantime. Without the deferral, fresh signups bounce to `/login` because the layout sees `user=null` for ~1s after `loading` flips to false.
-2. **Call `refreshProfile(userId)` after inserting a profile row.** AuthProvider's first `fetchProfile` raced the insert and got HTTP 406 (PostgREST's "no rows" code, NOT 404). It cached `profile=null`, so `role` stays null forever and layouts that gate on role render blank. `src/app/signup/page.tsx` and `src/app/join/[token]/page.tsx` both call `refreshProfile(authData.user.id)` after the insert — pass the userId explicitly because AuthProvider's `user` state may still be stale at call time.
-
-### Data queries bypass `@supabase/ssr` (use direct PostgREST `fetch`)
-
-`src/lib/student-data.ts` and `src/lib/tracker.ts` do NOT use `supabase.from(...).select(...)`. They build `fetch(`${url}/rest/v1/...`)` calls directly, with the JWT pulled out of the `sb-<ref>-auth-token` cookie.
-
-**Why:** `@supabase/ssr`'s `createBrowserClient` calls `_useSession` before every query. `_useSession` acquires a `navigator.locks` lock keyed on the project ref. If a prior page's `auth.getUser()` was aborted by navigation while holding that lock, every subsequent `.from()` on ANY client in the browser hangs indefinitely (the lock key is browser-wide, so making a fresh client doesn't help). The hang isn't a timeout — it's a permanent deadlock until the page reloads.
-
-`src/lib/supabase/client.ts` exports both `createClient()` (singleton, used ONLY by AuthProvider — needs the lock for cross-tab session sync) and `createDataClient()` (fresh, lock-bypassed via `auth: { lock: (_, __, fn) => fn() }`). The `createDataClient` is currently unused now that we went all-REST, but kept for cases where you want the JS client's query builder ergonomics.
-
-If you reach for `supabase.from(...)` in a new component, you'll inherit the hang. Use the REST helpers in `student-data.ts` as a model, or call `createDataClient()` and accept the (smaller but still real) risk.
+`src/lib/tracker.ts` writes practice sessions and attempts during the client-side activity loop. Keep that contract small: activities emit attempts and finish events, while server pages load the user/student/content before rendering the practice runner.
 
 ### Parents need RLS to manage their own focus_areas
 
@@ -176,6 +156,10 @@ Authoritative spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-de
 - Parent progress summary emails
 - Ages 9-12 visual mode
 
+## Pet Kitchen status
+
+Pet Kitchen was explored as a Phase 1a spelling wrapper in May 2026, but it is **not current implementation scope**. The related docs under `docs/superpowers/specs/2026-05-19-*`, `docs/superpowers/plans/2026-05-19-*`, and `docs/playtests/2026-05-19-*` are historical/deferred. The implementation/assets/tests were removed from current `main` during the 2026-05-27 source-of-truth reconciliation. Do not rebuild Pet Kitchen or route the spelling activity through it unless Eli explicitly re-scopes it against the current `/student/practice` architecture and Phase 1a metric.
+
 ## Success Metric (Phase 1a)
 
 After 4 weeks with wife's students: **≥60% complete practice 4+ days/week** (measured via practice_sessions table). If this fails, rework pet mechanics or content before adding more features.
@@ -213,13 +197,13 @@ Queryable knowledge base of Ilana's curated teaching materials. See `kb/README.m
 
 ## Comics authoring (`comics/`)
 
-Python pipeline that produces phonics-decodable comic issues for the Phase 1b "Story Listening" activity. **Sibling subsystem to `kb/` — same repo, separate venv, separate concerns.** Asset production runs in parallel with Phase 1a; in-app shipping waits until Phase 1a hits ≥60% practice rate. See `comics/README.md` and the plan at `~/.Codex/plans/new-project-planning-red-snazzy-wadler.md`.
+Python pipeline that produces phonics-decodable comic issues for the Phase 1b "Story Listening" activity. **Sibling subsystem to `kb/` — same repo, separate venv, separate concerns.** As of 2026-05-27, `comics/` is intentionally local-only and separate from pushed `main` unless Eli explicitly asks to reconcile or commit it. Asset production may run in parallel with Phase 1a; in-app shipping waits until Phase 1a hits >=60% practice rate. See `comics/README.md` and the plan at `~/.Codex/plans/new-project-planning-red-snazzy-wadler.md`.
 
 - **What it produces**: 5–7 page manga/Ghibli-style phonics comics. Recurring kid + pet cast (Sam, Whiskers). Every word in every speech bubble is mechanically gated to the issue's phonics stage. Target words preview page per Ilana's `decodable-word-preview` principle.
 - **Pipeline (5 steps)**: `new_issue.py` → `validate_script.py` (hard gate) → `generate_panels.py` (Gemini 3 Pro Image with character refs) → `typeset_pages.py` (Pillow + Andika font + OCR re-validation) → `publish_issue.py` (OpenAI TTS + asset bundle into `public/comics/<slug>/` + seed SQL).
 - **Decodability gate**: `comics/lib/decodability.py` is the single source of truth for what words are allowed at each stage. Cumulative across stages, plus a sight-word allowlist, plus character names gated to introduction stages (e.g. "Whiskers" requires both `wh-` and `-er` taught — empty placeholder stage `digraphs-wh-er` exists in the validator just to anchor that gate).
-- **Stage parity**: `comics/tests/test_curriculum_parity.py` parses `src/lib/fixtures/student.ts` and asserts ACTIVE_STAGES match word-for-word. If you add a phonics stage to the app, you must update the validator (or vice versa) — the test will catch drift.
-- **Setup**: `cd comics && /opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"`. Run tests: `PYTHONPATH=. .venv/bin/pytest`. Currently 148 tests, all green.
+- **Stage parity**: `comics/tests/test_curriculum_parity.py` parses `src/lib/fixtures/student.ts` and asserts `ACTIVE_STAGES` match word-for-word. Current app fixture stage IDs are `phonics-cvc-short-a`, `phonics-cvc-short-i`, `phonics-cvc-short-o`, `phonics-cvc-short-u`, `phonics-cvc-short-e`, `phonics-cvc-mixed`, `phonics-beg-blends`, `phonics-end-blends`, `phonics-digraphs-sh-ch`, `phonics-digraphs-th`, `phonics-magic-e`, and `phonics-vowel-teams`. If you add a phonics stage to the app, update the validator (or vice versa); the parity test will catch drift.
+- **Setup**: `cd comics && /opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"`. Run tests: `cd comics && PYTHONPATH=. .venv/bin/pytest`. Current local-only baseline: 158 tests pass after the 2026-05-27 fixture-parity cleanup.
 - **Secrets**: API keys flow through Infisical → `wordpets/.env.local` via `npm run pull-secrets` (same flow as the rest of the wordpets project — comics doesn't have its own Infisical client). Pilot needs `GEMINI_API_KEY` (Gemini 3.1 Flash Image, model name `gemini-3.1-flash-image-preview`); typesetter/TTS phases later need `OPENAI_API_KEY`. Both belong in Infisical project `2423b7fc` (legacy "blending-bootcamp") env `prod`.
 - **Pilot tooling built (2026-05-06)**: `lib/secrets.py` (env loader), `lib/gemini_client.py` (Gemini wrapper with character-ref multi-image conditioning), `scripts/generate_refs.py` (candidate ref generation), `scripts/generate_panels.py` (panel generation with surgical re-roll via `--panel page:panel`).
 - **Pilot-first scope**: deliberately stops at "one reviewable pilot issue". Typesetting, OCR re-validation, TTS, and publish steps NOT YET BUILT — they wait until pilot art direction is approved by Eli + Ilana.

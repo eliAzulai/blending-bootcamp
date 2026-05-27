@@ -19,7 +19,7 @@ WordPets — a companion practice app assigned by a teacher (Eli's wife, Ilana) 
 
 **Target users (Phase 1a):** English-speaking children living in Israel ages 6-8. They speak/understand English fluently but struggle with reading and writing.
 
-## Status (as of 2026-05-11)
+## Status (as of 2026-05-27)
 
 | Phase | Scope | Status |
 |-------|-------|--------|
@@ -28,6 +28,8 @@ WordPets — a companion practice app assigned by a teacher (Eli's wife, Ilana) 
 | **Phase 2+** | Live teaching platform, teacher SaaS, standalone B2C | Out of scope for this codebase. |
 
 The original **Phase 0 — Blending Bootcamp** (14-day standalone phonics program) was the starting point of this repo. As of 2026-05-11 its routes and supporting files have been removed; only the reusable mechanic survives: `BlendingExercise.tsx` + `PhonemeCard.tsx` + `useSpeechRecognition.ts` + `phoneme-matching.ts` + `speech.ts`. Those are used by `PhonicsActivity` inside the Phase 1a practice loop. There is no longer a "Phase 0 codebase to preserve" — the cleanup is complete.
+
+**Blending Bootcamp scope fence:** The repo, Infisical project, and some old docs still use the legacy `blending-bootcamp` name. That is history and infrastructure naming only. Do not rebuild the self-service bootcamp, `/lesson/[day]`, localStorage progress timelines, Phase 0 routes, or standalone B2C flow unless Eli explicitly re-scopes it. Current product work is WordPets Phase 1a.
 
 ## Architecture
 
@@ -83,7 +85,8 @@ Speech output (TTS) uses browser Web Speech API:
 
 - `OPENAI_API_KEY` — server-side only, Whisper transcription (⚠️ as of 2026-04-23 the key in the `blending-bootcamp` Infisical project is out of credits; KB extraction was run against the `voice` project's key. Top up or rotate before relying on production Whisper.)
 - `NEXT_PUBLIC_SUPABASE_URL` — optional, enables cloud sync
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — optional
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — optional; primary key used by server/middleware/tracker.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — optional backwards-compatible fallback for the browser client only.
 
 ## Brand
 
@@ -112,6 +115,10 @@ Authoritative spec: `docs/superpowers/specs/2026-04-14-wordpets-companion-app-de
 - AI content generation, teacher content uploads
 - Parent progress summary emails
 - Ages 9-12 visual mode
+
+## Pet Kitchen status
+
+Pet Kitchen was explored as a Phase 1a spelling wrapper in May 2026, but it is **not current implementation scope**. The related docs under `docs/superpowers/specs/2026-05-19-*`, `docs/superpowers/plans/2026-05-19-*`, and `docs/playtests/2026-05-19-*` are historical/deferred. The implementation/assets/tests were removed from current `main` during the 2026-05-27 source-of-truth reconciliation. Do not rebuild Pet Kitchen or route the spelling activity through it unless Eli explicitly re-scopes it against the current `/student/practice` architecture and Phase 1a metric.
 
 ## Success Metric (Phase 1a)
 
@@ -147,3 +154,11 @@ Queryable knowledge base of Ilana's curated teaching materials. See `kb/README.m
 - Setup: Python 3.10+, then `cd kb && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`. All `kb.scripts.*` modules must be invoked from the repo root with `PYTHONPATH=.`.
 - Vision extraction uses `gpt-4o-mini` with `detail: "low"` (fixed 85 tokens/image) plus a 0.5s proactive throttle and 65s TPM-aware retry floor in `kb/scripts/extract_vision.py` — if you change these, expect 200k TPM rate-limits on bulk runs.
 - Needs `OPENAI_API_KEY`. Infisical's `blending-bootcamp` project key is currently out of credits; see Env Vars section above.
+
+## Comics authoring (`comics/`)
+
+`comics/` is a local-only sibling subsystem for Phase 1b decodable comic asset production. Keep it separate from pushed `main` unless Eli explicitly asks to reconcile or commit it. Its in-app story/listening surface remains deferred until Phase 1a validates.
+
+- Stage parity: `comics/tests/test_curriculum_parity.py` parses `src/lib/fixtures/student.ts` and asserts comic `ACTIVE_STAGES` match the app fixture word-for-word.
+- Local test command: `cd comics && PYTHONPATH=. .venv/bin/pytest`.
+- Current local-only baseline after the 2026-05-27 cleanup: 158 comics tests pass.
