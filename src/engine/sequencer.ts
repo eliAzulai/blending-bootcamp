@@ -14,7 +14,7 @@ export function selectNext(
   // 1. Reviews owed: learning + due.
   const due = states
     .filter((s) => s.status === "learning" && s.due !== null && s.due <= now)
-    .sort((a, b) => (a.due! - b.due!));
+    .sort((a, b) => (a.due! - b.due!) || a.conceptId.localeCompare(b.conceptId));
   if (due.length > 0) {
     return { conceptId: due[0].conceptId, mode: "review" };
   }

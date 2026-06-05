@@ -36,6 +36,14 @@ describe("selectNext", () => {
     expect(selectNext(linearGraph, mastered, 99 * DAY)).toBeNull();
   });
 
+  it("breaks ties deterministically by conceptId when reviews share a due time", () => {
+    // Both due at the same instant, inserted in reverse-alphabetical order.
+    const it_: KnowledgeState = { ...blankState("it"), status: "learning", due: 1 * DAY };
+    const at_: KnowledgeState = { ...blankState("at"), status: "learning", due: 1 * DAY };
+    const pick = selectNext(linearGraph, [it_, at_], 2 * DAY);
+    expect(pick).toEqual({ conceptId: "at", mode: "review" });
+  });
+
   it("re-offers a not-yet-due learning concept as a learn activity (never a review)", () => {
     const notDue: KnowledgeState = { ...blankState("at"), status: "learning", due: 10 * DAY };
     // 'at' is learning but not yet due, so it is NOT a review. It is still on the
