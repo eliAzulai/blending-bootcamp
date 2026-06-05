@@ -29,6 +29,11 @@ describe("computeFrontier", () => {
     expect(frontier).toEqual(["op"]);
   });
 
+  it("returns [] for an empty graph", () => {
+    const frontier = computeFrontier({ nodes: [], edges: [] }, []);
+    expect(frontier).toEqual([]);
+  });
+
   it("is empty when everything is mastered", () => {
     const frontier = computeFrontier(
       linearGraph,
