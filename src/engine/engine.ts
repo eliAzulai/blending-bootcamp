@@ -3,6 +3,7 @@ import type {
   ActivityResult,
   Cartridge,
   KnowledgeStore,
+  MasteryStatus,
   Scheduler,
 } from "./types";
 import { blankState } from "./types";
@@ -49,12 +50,12 @@ export function createEngine(
 
     async masteryState(childId) {
       const states = await store.getAll(childId);
-      const mastered = states.filter((s) => s.status === "mastered").map((s) => s.conceptId);
-      const learning = states.filter((s) => s.status === "learning").map((s) => s.conceptId);
+      const idsWithStatus = (status: MasteryStatus) =>
+        states.filter((s) => s.status === status).map((s) => s.conceptId);
       const pick = selectNext(graph, states, clock());
       return {
-        mastered,
-        learning,
+        mastered: idsWithStatus("mastered"),
+        learning: idsWithStatus("learning"),
         frontierNext: pick && pick.mode === "learn" ? pick.conceptId : null,
       };
     },
