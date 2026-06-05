@@ -8,6 +8,7 @@ import type {
 import { blankState } from "./types";
 import { selectNext } from "./sequencer";
 import { applyResult } from "./mastery";
+import { validateGraph } from "./validate";
 
 export interface MasteryView {
   mastered: string[];
@@ -28,6 +29,7 @@ export function createEngine(
   clock: () => number,
 ): Engine {
   const graph = cartridge.conceptGraph();
+  validateGraph(graph);
 
   return {
     async nextActivity(childId) {
