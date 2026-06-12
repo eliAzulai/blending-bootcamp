@@ -56,8 +56,10 @@ Force re-extract: `PYTHONPATH=. python3 -m kb.scripts.extract --force`
 ## Tests
 
 ```bash
-PYTHONPATH=. pytest kb/tests/ -v
+kb/.venv/bin/pytest kb/tests/ -v   # from repo root, or: cd kb && .venv/bin/pytest -v
 ```
+
+`kb/pyproject.toml` adds the repo root to pytest's `pythonpath`, so `PYTHONPATH=.` is no longer required.
 
 ## External storage
 

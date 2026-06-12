@@ -1,0 +1,5 @@
+# Pytest config only — kb is not a packaged project (deps live in requirements.txt).
+# pythonpath adds the repo root so `kb.scripts.*` imports resolve without PYTHONPATH=.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".."]

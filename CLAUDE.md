@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` — ESLint
 - `npm run pull-secrets` — pull env vars from Infisical into `.env.local`
 - No JS/TS test framework yet
-- `PYTHONPATH=. pytest kb/tests/ -q` — Python tests for the teaching-resources KB (21 tests). Must run from repo root (`~/projects/wordpets`) with the kb venv active.
+- `kb/.venv/bin/pytest kb/tests/ -q` — Python tests for the teaching-resources KB (21 tests). Works from repo root or `kb/` (`kb/pyproject.toml` puts the repo root on `pythonpath`, so no `PYTHONPATH=.` needed).
 
 ## What This Is
 
