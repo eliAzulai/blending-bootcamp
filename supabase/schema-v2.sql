@@ -96,8 +96,49 @@ create table if not exists invite_tokens (
 alter table invite_tokens enable row level security;
 create policy "Teachers manage own invites" on invite_tokens for all
   using (auth.uid() = teacher_id) with check (auth.uid() = teacher_id);
-create policy "Anyone reads unused invites" on invite_tokens for select
-  using (used = false);
+-- NOTE: there is deliberately NO blanket anon SELECT policy on invite_tokens.
+-- invite_tokens carries student_name + student_age; a broad `using (used = false)`
+-- policy would let any anon enumerate children's names/ages. The unauthenticated
+-- join flow reads a single invite by its exact token via the SECURITY DEFINER
+-- function below, which cannot be used to enumerate the table.
+create or replace function public.get_invite_by_token(p_token text)
+returns table (
+  token text,
+  teacher_id uuid,
+  student_name text,
+  student_age integer
+)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select token, teacher_id, student_name, student_age
+  from invite_tokens
+  where token = p_token
+    and used = false
+$$;
+revoke all on function public.get_invite_by_token(text) from public;
+grant execute on function public.get_invite_by_token(text) to anon, authenticated;
+create or replace function public.claim_invite_token(p_token text, p_used_by uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update invite_tokens
+  set used = true,
+      used_by = p_used_by
+  where token = p_token
+    and used = false
+    and p_used_by = auth.uid();
+
+  return found;
+end;
+$$;
+revoke all on function public.claim_invite_token(text, uuid) from public;
+grant execute on function public.claim_invite_token(text, uuid) to authenticated;
 
 -- PRACTICE SESSIONS
 create table if not exists practice_sessions (

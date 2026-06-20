@@ -10,12 +10,12 @@ export default async function JoinPage({
   const { token } = await params;
   const supabase = await createClient();
 
+  // Token-scoped lookup (SECURITY DEFINER RPC): anon can validate this exact
+  // token without being able to enumerate invite_tokens. See migration
+  // supabase/migrations/20260618_restrict_invite_tokens.sql.
   const { data } = await supabase
-    .from("invite_tokens")
-    .select("*")
-    .eq("token", token)
-    .eq("used", false)
-    .single();
+    .rpc("get_invite_by_token", { p_token: token })
+    .maybeSingle();
 
   if (!data) {
     return (

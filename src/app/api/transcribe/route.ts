@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
 
 export async function POST(req: NextRequest) {
+  // Auth gate FIRST. This route relays a recording to a third party (OpenAI
+  // Whisper) using the server's OPENAI_API_KEY. The recordings are children's
+  // voices. Without an authenticated-session check it is (a) an open relay that
+  // burns OPENAI_API_KEY for any anonymous caller, and (b) an unconsented
+  // egress of kids' audio. Only signed-in users (the practice runner) may call it.
+  // Consent/retention boundary: audio is streamed straight to OpenAI for
+  // transcription and is NOT persisted by this route; OpenAI API inputs are not
+  // used for training and are retained per OpenAI's API data policy. Sending a
+  // child's voice to OpenAI must remain covered by the parent consent captured
+  // at join time; see docs/non-negotiable-rules.md and the join flow.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   if (!OPENAI_API_KEY) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY not configured" },

@@ -30,13 +30,11 @@ export async function joinAction(
 
   const supabase = await createClient();
 
-  // Re-validate the invite on the server to prevent tampering
+  // Re-validate the invite on the server to prevent tampering. Token-scoped
+  // SECURITY DEFINER RPC; no blanket anon read of invite_tokens.
   const { data: invite } = await supabase
-    .from("invite_tokens")
-    .select("*")
-    .eq("token", token)
-    .eq("used", false)
-    .single();
+    .rpc("get_invite_by_token", { p_token: token })
+    .maybeSingle();
 
   if (!invite) {
     return { error: "This invite link is invalid or has already been used." };
@@ -61,6 +59,19 @@ export async function joinAction(
     return { error: profileError.message };
   }
 
+  const { data: claimed, error: claimError } = await supabase.rpc(
+    "claim_invite_token",
+    { p_token: token, p_used_by: parentId },
+  );
+
+  if (claimError || !claimed) {
+    return {
+      error:
+        claimError?.message ??
+        "This invite link was already used. Please ask your teacher for a new link.",
+    };
+  }
+
   const { data: student, error: studentError } = await supabase
     .from("students")
     .insert({
@@ -75,11 +86,6 @@ export async function joinAction(
   if (studentError || !student) {
     return { error: studentError?.message ?? "Could not create student." };
   }
-
-  await supabase
-    .from("invite_tokens")
-    .update({ used: true, used_by: parentId })
-    .eq("id", (invite as { id: string }).id);
 
   redirect(`/join/${token}/pet-select?student=${(student as { id: string }).id}`);
 }
