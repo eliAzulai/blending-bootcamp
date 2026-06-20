@@ -70,6 +70,7 @@ end;
 $$;
 
 revoke all on function public.claim_invite_token(text, uuid) from public;
+revoke all on function public.claim_invite_token(text, uuid) from anon;
 grant execute on function public.claim_invite_token(text, uuid) to authenticated;
 
 commit;
