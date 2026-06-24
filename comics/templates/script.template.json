@@ -1,0 +1,26 @@
+{
+  "issue_id": "comic-TBD",
+  "stage_id": "TBD",
+  "title": "TBD",
+  "page_count": 6,
+  "target_words": [],
+  "sight_words": ["the", "a", "is", "I"],
+  "permitted_sight_words": ["the", "a", "is"],
+  "pages": [
+    {
+      "page": 1,
+      "panels": [
+        {
+          "panel": 1,
+          "art_prompt": "TBD — concrete visual description for Gemini 3 Pro Image. Reference characters by id (e.g. sam, cat). State posture, expression, lighting, framing. Do NOT include the speech text here; it goes in 'speech'.",
+          "characters": ["sam"],
+          "speech": [
+            { "speaker": "sam", "text": "TBD." }
+          ],
+          "captions": [],
+          "sfx": []
+        }
+      ]
+    }
+  ]
+}

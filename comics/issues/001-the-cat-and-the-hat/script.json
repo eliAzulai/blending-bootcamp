@@ -1,0 +1,209 @@
+{
+  "issue_id": "comic-cvc-short-a-001",
+  "stage_id": "cvc-short-a",
+  "title": "The Cat and the Hat",
+  "page_count": 6,
+  "permitted_sight_words": [
+    "the",
+    "a",
+    "is",
+    "i"
+  ],
+  "target_words": [
+    "Sam",
+    "cat",
+    "hat",
+    "mat"
+  ],
+  "sight_words": [
+    "the",
+    "a",
+    "is",
+    "I"
+  ],
+  "pages": [
+    {
+      "page": 1,
+      "panels": [
+        {
+          "panel": 1,
+          "art_prompt": "Wide establishing shot. Sam stands in a sunny cozy room holding the same oversized tan woven straw sun hat with a very wide brim (NOT a baseball cap, NOT cloth) \u2014 the same oversized tan woven straw sun hat with a very wide brim is almost as wide as Sam is tall. Wooden floor, a small woven mat in the foreground. Soft afternoon light through an off-frame window. Sam looks down at the same oversized tan woven straw sun hat with a very wide brim with mild wonder.",
+          "characters": [
+            "sam"
+          ],
+          "speech": [
+            {
+              "speaker": "sam",
+              "text": "I have a hat."
+            }
+          ],
+          "captions": [],
+          "sfx": []
+        },
+        {
+          "panel": 2,
+          "art_prompt": "Closer shot. Sam crouches and sets the same oversized tan woven straw sun hat with a very wide brim carefully down on the woven mat. The same oversized tan woven straw sun hat with a very wide brim looks even more comically large up close; keep it straw-colored and structured, NOT a baseball cap and NOT cloth. Sam's expression: thoughtful, observational.",
+          "characters": [
+            "sam"
+          ],
+          "speech": [
+            {
+              "speaker": "sam",
+              "text": "The hat is on the mat."
+            }
+          ],
+          "captions": [],
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "panels": [
+        {
+          "panel": 1,
+          "art_prompt": "Side angle. The cat (orange tabby, white front socks, chipped left ear) creeps into frame from the right edge, low to the ground, eyes fixed on the same oversized tan woven straw sun hat with a very wide brim. Sam is half-out-of-frame on the left, not yet noticing.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [],
+          "captions": [],
+          "sfx": []
+        },
+        {
+          "panel": 2,
+          "art_prompt": "The cat pauses one step from the same oversized tan woven straw sun hat with a very wide brim, head tilted, ears forward. Tail held in a slow curl. Sam, in the background, has now noticed and watches with the start of a smile.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [],
+          "captions": [],
+          "sfx": []
+        },
+        {
+          "panel": 3,
+          "art_prompt": "The cat steps onto the same oversized tan woven straw sun hat with a very wide brim and sits. The same oversized tan woven straw sun hat with a very wide brim squashes flat under him with a clear visual crumple: bent brim, flattened crown, no in-art text. Cat is supremely comfortable. Sam grins.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [
+            {
+              "speaker": "sam",
+              "text": "The cat is on the hat!"
+            }
+          ],
+          "captions": [],
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "panels": [
+        {
+          "panel": 1,
+          "art_prompt": "Close-up of the cat sitting on the squashed oversized tan woven straw sun hat, eyes half-closed, deeply pleased. Tail draped to one side.",
+          "characters": [
+            "whiskers"
+          ],
+          "speech": [],
+          "captions": [],
+          "sfx": []
+        },
+        {
+          "panel": 2,
+          "art_prompt": "Sam reaches a hand toward the cat to pet him while the cat remains seated on the squashed oversized tan woven straw sun hat with a very wide brim. The hand is gentle, fingers slightly curled. Cat's expression shifts to a soft, accepting blink. Keep the hat straw-colored and structured even though flattened; NOT a baseball cap and NOT cloth.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [
+            {
+              "speaker": "sam",
+              "text": "I see the cat."
+            }
+          ],
+          "captions": [],
+          "sfx": [],
+          "bubble_anchor": "left",
+          "bubble_position": "right",
+          "bubble_top": 8,
+          "bubble_font_size": 44,
+          "bubble_tail": false
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "panels": [
+        {
+          "panel": 1,
+          "art_prompt": "Sam sits cross-legged on the wooden floor next to the mat. The cat is now beside him on the mat (not on the same oversized tan woven straw sun hat with a very wide brim anymore \u2014 the same oversized tan woven straw sun hat with a very wide brim is set aside). Both are looking at each other.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [
+            {
+              "speaker": "sam",
+              "text": "Sam is on the mat."
+            }
+          ],
+          "captions": [],
+          "sfx": [],
+          "bubble_anchor": "left",
+          "bubble_position": "right",
+          "bubble_top": 16,
+          "bubble_font_size": 48,
+          "bubble_tail": false
+        },
+        {
+          "panel": 2,
+          "art_prompt": "Slightly wider shot. The afternoon light is warmer now, longer shadows. Sam yawns once. Cat blinks slowly beside him on the woven mat. The oversized tan woven straw sun hat with a very wide brim is set aside nearby, still clearly a straw hat, NOT a baseball cap and NOT cloth.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [],
+          "captions": [],
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "page": 5,
+      "panels": [
+        {
+          "panel": 1,
+          "art_prompt": "Wordless. Wide shot. The cat is curled up asleep on the same oversized tan woven straw sun hat with a very wide brim, on the mat, in a pool of golden late-afternoon sun. Sam is dozing nearby, head tipped to one side, eyes closed. The room is still. This is the emotional payoff panel \u2014 let it breathe.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [],
+          "captions": [],
+          "sfx": []
+        }
+      ]
+    },
+    {
+      "page": 6,
+      "panels": [
+        {
+          "panel": 1,
+          "art_prompt": "MY WORDS preview page. NOT illustrated like the rest of the comic \u2014 this is a typeset page with a small framing illustration in the top corner (Sam and Cat sitting on the mat, simplified). Below: the My Words list rendered in Andika font in post. The art panel itself is just the corner vignette and a clean rounded WordPets-style border. The word list is added by the typesetter, not the AI.",
+          "characters": [
+            "sam",
+            "whiskers"
+          ],
+          "speech": [],
+          "captions": [],
+          "sfx": []
+        }
+      ]
+    }
+  ]
+}

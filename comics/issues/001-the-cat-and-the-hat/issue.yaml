@@ -1,0 +1,35 @@
+issue_number: 1
+slug: "the-cat-and-the-hat"
+title: "The Cat and the Hat"
+stage_id: "cvc-short-a"
+
+characters:
+  - sam
+  # - cat (referenced as "the cat" — the name "Whiskers" is gated to digraphs-wh-er)
+
+story_beats:
+  - "Sam holds his hat. The hat is comically big — almost as big as Sam."
+  - "Sam puts the hat down on the mat to look at it."
+  - "The cat (orange tabby, white front socks, chip in left ear) creeps in from the side."
+  - "The cat gets on the hat. The hat squashes flat under him."
+  - "Sam laughs and pats the cat. The cat purrs (silent — no decodable purr word at this stage)."
+  - "Wordless final panel: the cat asleep on the hat, on the mat, in afternoon sun. Sam dozing nearby."
+
+visual_gag: "The hat is several sizes too big for the cat. The hat doesn't fit Sam either. No one has ever owned this hat correctly."
+
+catchphrase:
+  sam: "I have a hat."
+
+authored_by: "eli"
+reviewed_by: ""
+
+art_notes: |
+  Clean WordPets educational-comic asset style, matching comics/style-references/wordpets-asset-style-target.jpeg.
+  Rounded friendly characters, crisp dark navy outlines, smooth color fills, minimal shading.
+  Use comics/style-references/comic-layout-direction-bonnie-chester.jpeg for page rhythm only, not character style.
+  Warm daylight through a window.
+  Setting: small cozy room, wooden floor with the mat in the center.
+  Color palette: cream, navy outlines, sage green, warm straw yellow, soft orange tabby.
+  Single-story 'a' wherever in-art lettering is unavoidable — minimize.
+  Early-reader comic panel layout, ~2-4 panels per page. 6 pages total.
+  Final page is the "My Words" preview list (typeset in post, no art needed).

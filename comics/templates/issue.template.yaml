@@ -1,0 +1,51 @@
+# WordPets Comic — Issue Source of Truth
+#
+# This file is the human-authored input. Edit it freely. Then write the panel
+# scripts in script.json (which validate_script.py gates), and run the rest of
+# the pipeline.
+#
+# Re-read these principles before authoring:
+#   wordpets/kb/extracted/principles/video-book-hybrid.md
+#   wordpets/kb/extracted/principles/decodable-word-preview.md
+#   wordpets/kb/extracted/principles/systematic-review.md
+#   wordpets/kb/extracted/principles/break-up-monotony.md
+#   wordpets/kb/extracted/principles/consistency-breeds-trust.md
+
+issue_number: 0           # filled in by new_issue.py
+slug: "TBD"               # kebab-case, e.g. "the-cat-and-the-hat"
+title: "TBD"
+stage_id: "TBD"           # one of the keys in lib/decodability.py STAGE_ORDER
+
+# Cast for THIS issue. Each name must be in CHARACTER_NAMES with a gating
+# stage <= stage_id. The validator will reject names introduced too early.
+characters:
+  - sam
+  # - cat       # generic, not gated by name
+
+# Story beats (plain English, NOT decodable). Author/Ilana sketches the arc
+# here in regular language; this is NOT validated. The decodable text lives
+# in script.json's speech bubbles.
+story_beats:
+  - "Sam holds a hat that's too big for the cat."
+  - "Cat sneaks onto the hat."
+  - "Sam laughs, takes the hat back, and Cat curls up on the mat."
+  - "Closing wordless panel: Cat asleep on the mat in afternoon sun."
+
+# Visual gag — what the art carries that the text can't.
+visual_gag: "TBD"
+
+# Per-character catchphrase (optional, for recurring cast).
+catchphrase:
+  sam: ""
+
+# Author + reviewer (Ilana sign-off required before publish).
+authored_by: "eli"
+reviewed_by: ""           # set when Ilana approves the printed copy
+
+# Free-form notes for the AI prompt builder. Aesthetic cues, lighting hints,
+# specific Ghibli references, color palette nudges, etc.
+art_notes: |
+  Soft Ghibli watercolor.
+  Warm afternoon light.
+  Single-story 'a' wherever in-art lettering is unavoidable (minimize).
+  Manga panel layout, ~3 panels per page.

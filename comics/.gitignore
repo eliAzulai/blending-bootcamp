@@ -1,0 +1,28 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.env
+.env.local
+
+# Generated artifacts (regenerable from issue.yaml + script.json)
+issues/*/panels/
+issues/*/pages/
+issues/*/audio/
+issues/*/ocr-report.json
+issues/*/issue.json
+
+# Character ref packs may contain large binaries; commit selectively
+characters/*/refs/*.psd
+characters/*/embedding.json
+characters/*/candidates/
+characters/*/refs/old-style-placeholders/
+
+# Heavy scratch / regenerable binaries — keep the shared repo lean
+issues/*/*.pdf
+issues/*/source-contact-sheet*.png
+*.jpg.jpeg
+issue-001-the-cat-and-the-hat-panels-v2-consistency/
