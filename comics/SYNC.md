@@ -53,8 +53,11 @@ git clone https://github.com/eliAzulai/blending-bootcamp.git
 # 4. Switch to the shared comics line
 cd blending-bootcamp && git checkout comics
 
-# 5. Open Codex in the comics folder
-cd comics && codex
+# 5. Confirm everything is wired up (changes nothing)
+cd comics && ./scripts/check-setup.sh
+
+# 6. Open Codex in the comics folder
+codex
 ```
 
 Two more things, once:
