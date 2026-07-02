@@ -19,12 +19,19 @@ export function selectNext(
     return { conceptId: due[0].conceptId, mode: "review" };
   }
 
-  // 2. Otherwise learn the next frontier concept.
-  const frontier = computeFrontier(graph, states);
+  // 2. Otherwise learn the next frontier concept — skipping "parked" concepts
+  // (learning with a future due date): their next exposure is the spaced
+  // review, not more same-day checkpoints. Subject-agnostic scheduling logic.
+  const parked = new Set(
+    states
+      .filter((s) => s.status === "learning" && s.due !== null && s.due > now)
+      .map((s) => s.conceptId),
+  );
+  const frontier = computeFrontier(graph, states).filter((id) => !parked.has(id));
   if (frontier.length > 0) {
     return { conceptId: frontier[0], mode: "learn" };
   }
 
-  // 3. Nothing owed, nothing new.
+  // 3. Nothing owed, nothing new: today's session is complete.
   return null;
 }

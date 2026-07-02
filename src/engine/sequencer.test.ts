@@ -44,12 +44,29 @@ describe("selectNext", () => {
     expect(pick).toEqual({ conceptId: "at", mode: "review" });
   });
 
-  it("re-offers a not-yet-due learning concept as a learn activity (never a review)", () => {
+  it("skips a parked concept (learning, not due) and returns null when nothing else is eligible", () => {
+    // S1/S3: after today's checkpoint the concept is parked; with a linear
+    // graph nothing else is unlocked, so the session is over for today.
     const notDue: KnowledgeState = { ...blankState("at"), status: "learning", due: 10 * DAY };
-    // 'at' is learning but not yet due, so it is NOT a review. It is still on the
-    // frontier (not mastered, no unmet prereqs), so the child keeps practising it.
-    // 'it'/'op' stay blocked because 'at' isn't mastered.
-    const pick = selectNext(linearGraph, [notDue], 1 * DAY);
-    expect(pick).toEqual({ conceptId: "at", mode: "learn" });
+    expect(selectNext(linearGraph, [notDue], 1 * DAY)).toBeNull();
+  });
+
+  it("skips a parked concept and learns an unparked sibling instead", () => {
+    // Sibling graph: 'at' and 'an' have no prereqs.
+    const siblings = {
+      nodes: [
+        { id: "at", subject: "reading", title: "-at" },
+        { id: "an", subject: "reading", title: "-an" },
+      ],
+      edges: [],
+    };
+    const parkedAt: KnowledgeState = { ...blankState("at"), status: "learning", due: 10 * DAY };
+    const pick = selectNext(siblings, [parkedAt], 1 * DAY);
+    expect(pick).toEqual({ conceptId: "an", mode: "learn" });
+  });
+
+  it("still reviews a parked concept once it comes due", () => {
+    const parked: KnowledgeState = { ...blankState("at"), status: "learning", due: 2 * DAY };
+    expect(selectNext(linearGraph, [parked], 3 * DAY)).toEqual({ conceptId: "at", mode: "review" });
   });
 });
