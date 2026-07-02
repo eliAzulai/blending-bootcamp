@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { speakWord } from "@/lib/speech";
 import type { ActivityResult } from "@/engine/types";
 import type { BuildWordPayload } from "@/cartridges/reading/types";
@@ -13,6 +13,9 @@ import {
   type BuildWordState,
 } from "@/cartridges/reading/build-word-logic";
 
+/** Celebration pause before reporting the result to the runner. */
+const RESULT_DELAY_MS = 900;
+
 interface Props {
   conceptId: string;
   payload: BuildWordPayload;
@@ -23,11 +26,20 @@ export default function BuildWordActivity({ conceptId, payload, onResult }: Prop
   const [state, setState] = useState<BuildWordState>(() => initBuildWord(payload.word));
   const [shake, setShake] = useState(false);
   const [solved, setSolved] = useState(false);
+  const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // B1: speak the word once on start.
   useEffect(() => {
     speakWord(payload.word).catch(() => {});
   }, [payload.word]);
+
+  // A delayed onResult must never fire after unmount — it would double-count
+  // in the runner's bookkeeping (servedCount / policy reps).
+  useEffect(() => {
+    return () => {
+      if (resultTimerRef.current !== null) clearTimeout(resultTimerRef.current);
+    };
+  }, []);
 
   const allFilled = state.slots.every((s) => s !== null);
 
@@ -36,7 +48,10 @@ export default function BuildWordActivity({ conceptId, payload, onResult }: Prop
     if (outcome === "solved") {
       setState(next);
       setSolved(true);
-      setTimeout(() => onResult(buildWordResult(conceptId, next.checks, next.scaffold)), 900);
+      resultTimerRef.current = setTimeout(
+        () => onResult(buildWordResult(conceptId, next.checks, next.scaffold)),
+        RESULT_DELAY_MS,
+      );
     } else {
       setState(next);
       setShake(true);

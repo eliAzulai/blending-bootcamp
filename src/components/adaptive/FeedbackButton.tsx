@@ -42,6 +42,7 @@ export default function FeedbackButton({ eventLog, active }: Props) {
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const contextRef = useRef<Record<string, unknown>>({});
   const queueRef = useRef<FeedbackQueue | null>(null);
@@ -51,17 +52,46 @@ export default function FeedbackButton({ eventLog, active }: Props) {
     void queueRef.current.flush(); // F4: page-load retry
   }, []);
 
+  // Unmount mid-recording is routine (F5 hides this button whenever the next
+  // activity is a read_aloud_check). Never leak the mic: tear down the active
+  // recorder and stop every track. The in-progress note is dropped — acceptable
+  // for a builder-only dev tool; a live mic indicator lying to the user is not.
+  useEffect(() => {
+    return () => {
+      const recorder = recorderRef.current;
+      if (recorder) {
+        recorder.ondataavailable = null;
+        recorder.onstop = null; // no post-unmount transcription/submit
+        if (recorder.state !== "inactive") {
+          try { recorder.stop(); } catch { /* already stopped */ }
+        }
+        recorderRef.current = null;
+      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+  }, []);
+
   async function toggle() {
     if (busy) return;
     if (!recording) {
       // F3: stamp context at note START.
       contextRef.current = { ...eventLog.context(window.location.pathname, active) };
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        // Mic denied/unavailable — stay in clean idle state.
+        setRecording(false);
+        return;
+      }
+      streamRef.current = stream;
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        if (streamRef.current === stream) streamRef.current = null;
         setBusy(true);
         try {
           const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });

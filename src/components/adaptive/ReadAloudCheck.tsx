@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listenForSpeech } from "@/lib/speech-recognition";
 import type { ActivityResult } from "@/engine/types";
 import type { ReadAloudPayload } from "@/cartridges/reading/types";
@@ -9,6 +9,9 @@ import {
   applyListen,
   type ReadAloudState,
 } from "@/cartridges/reading/read-aloud-logic";
+
+/** Celebration pause before reporting the result to the runner. */
+const RESULT_DELAY_MS = 900;
 
 interface Props {
   conceptId: string;
@@ -25,6 +28,15 @@ export default function ReadAloudCheck({ conceptId, payload, onResult, onAbort }
     initReadAloud(conceptId, payload.word, payload.accept),
   );
   const [phase, setPhase] = useState<Phase>("ready");
+  const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // A delayed onResult must never fire after unmount — it would double-count
+  // in the runner's bookkeeping (servedCount / policy reps).
+  useEffect(() => {
+    return () => {
+      if (resultTimerRef.current !== null) clearTimeout(resultTimerRef.current);
+    };
+  }, []);
 
   async function listen() {
     setPhase("listening");
@@ -33,7 +45,7 @@ export default function ReadAloudCheck({ conceptId, payload, onResult, onAbort }
     if (step.kind === "done") {
       setPhase("done");
       // R17: never show the transcript; generic positive acknowledgment only.
-      setTimeout(() => onResult(step.result), 900);
+      resultTimerRef.current = setTimeout(() => onResult(step.result), RESULT_DELAY_MS);
     } else if (step.kind === "aborted") {
       onAbort();
     } else {
