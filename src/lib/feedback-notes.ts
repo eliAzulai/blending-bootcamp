@@ -54,7 +54,18 @@ const QUEUE_KEY = "wp-feedback-queue";
 
 /** F4: failed saves land in storage and retry on the next submit or flush. */
 export class FeedbackQueue {
+  private chain: Promise<void> = Promise.resolve();
+
   constructor(private saver: NoteSaver, private storage: StorageLike) {}
+
+  /** All queue ops run strictly sequentially — concurrent submits can't
+   *  interleave their read-modify-write on storage and drop a note. */
+  private serialize(op: () => Promise<void>): Promise<void> {
+    const next = this.chain.then(op, op);
+    // Keep the chain alive even if op rejects.
+    this.chain = next.catch(() => {});
+    return next;
+  }
 
   private readQueue(): FeedbackNote[] {
     try {
@@ -69,7 +80,7 @@ export class FeedbackQueue {
     else this.storage.setItem(QUEUE_KEY, JSON.stringify(notes));
   }
 
-  async flush(): Promise<void> {
+  private async flushNow(): Promise<void> {
     const pending = this.readQueue();
     const stillPending: FeedbackNote[] = [];
     for (const note of pending) {
@@ -82,12 +93,18 @@ export class FeedbackQueue {
     this.writeQueue(stillPending);
   }
 
-  async submit(note: FeedbackNote): Promise<void> {
-    await this.flush();
-    try {
-      await this.saver(note);
-    } catch {
-      this.writeQueue([...this.readQueue(), note]);
-    }
+  flush(): Promise<void> {
+    return this.serialize(() => this.flushNow());
+  }
+
+  submit(note: FeedbackNote): Promise<void> {
+    return this.serialize(async () => {
+      await this.flushNow();
+      try {
+        await this.saver(note);
+      } catch {
+        this.writeQueue([...this.readQueue(), note]);
+      }
+    });
   }
 }

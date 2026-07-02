@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { SessionEventLog, FeedbackQueue, type NoteSaver } from "./feedback-notes";
+import { SessionEventLog, FeedbackQueue, type NoteSaver, type FeedbackNote } from "./feedback-notes";
 
 describe("SessionEventLog (F3)", () => {
   it("keeps only the last 5 activity results", () => {
@@ -57,5 +57,35 @@ describe("FeedbackQueue (F4)", () => {
     await q.flush();
     expect(saved).toHaveLength(1);
     expect(storage.getItem("wp-feedback-queue")).toBeNull();
+  });
+
+  it("overlapping submits never drop a note (queue ops are serialized)", async () => {
+    // Race being pinned: an unserialized flush reads a queue snapshot, awaits a
+    // slow saver for the pending note, and then writes back its stale snapshot
+    // — clobbering any note another failing submit appended in the meantime.
+    let releaseOld!: () => void;
+    const gate = new Promise<void>((resolve) => { releaseOld = resolve; });
+    let oldCalls = 0;
+    const saver: NoteSaver = async (n) => {
+      if (n.transcript === "old") {
+        oldCalls += 1;
+        if (oldCalls === 1) {
+          await gate; // slow SUCCESS: holds a stale queue snapshot open in flush
+          return;
+        }
+      }
+      throw new Error("offline"); // every new note fails and must be queued
+    };
+    storage.setItem("wp-feedback-queue", JSON.stringify([{ transcript: "old", context: {} }]));
+    const q = new FeedbackQueue(saver, storage);
+    const p1 = q.submit({ transcript: "note 1", context: {} });
+    const p2 = q.submit({ transcript: "note 2", context: {} });
+    // Macrotask tick: lets any unserialized work settle while p1's flush is
+    // still parked on the gate (a serialized queue just stays parked here).
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    releaseOld();
+    await Promise.all([p1, p2]);
+    const queued = JSON.parse(storage.getItem("wp-feedback-queue")!) as FeedbackNote[];
+    expect(queued.map((n) => n.transcript).sort()).toEqual(["note 1", "note 2"]);
   });
 });
