@@ -49,9 +49,11 @@ Italic letterforms are harder to decode and differ from handwriting. Bold for em
 
 Both photosensitivity protection and concentration. Animations that draw attention to a coin earned, a correct answer, etc. are fine — they should pulse at a calm rate, never strobe.
 
-## R7 — Speech recordings are non-authoritative for read-aloud (Phase 1a)
+## R7 — Speech recordings are non-authoritative for passage read-aloud
 
-Whisper transcribes read-aloud passages but does not pass/fail the child. This is in the design spec and is not a typography rule, but it lives here because it's commonly forgotten when adding new activities or scoring.
+Whisper transcribes read-aloud **passages** but does not pass/fail the child. This is in the design spec and is not a typography rule, but it lives here because it's commonly forgotten when adding new activities or scoring.
+
+**Scoped exception (2026-07-02, pedagogically justified):** the adaptive engine's **single-word** read-aloud check (`docs/superpowers/specs/2026-07-02-wordpets-reading-cartridge-design.md`) is authoritative by design. Word-level matching against a strict exact-plus-accept-list rule is reliable in a way passage transcription is not, and word-level oral reading was chosen as the mastery signal in the approved 2026-06-05 engine spec. Passage read-aloud remains non-authoritative, and a technical transcription failure must never be recorded as a wrong read.
 
 ## R8 — Numerals must match handwriting forms
 
