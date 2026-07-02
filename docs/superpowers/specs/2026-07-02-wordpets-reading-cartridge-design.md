@@ -1,7 +1,7 @@
 # WordPets Reading Cartridge + Activity Layer — Design Spec
 
 **Date:** 2026-07-02
-**Status:** DRAFT — pending user spec review (all ambiguities resolved inline; see §6)
+**Status:** APPROVED 2026-07-02 — spec-review change incorporated (builder feedback capture, §2.7); user said "go"
 **Parent spec:** `2026-06-05-wordpets-adaptive-reading-engine-design.md` (engine v0, merged)
 **Piece:** 1 of 3 (this piece: cartridge + activities; piece 2: Supabase KnowledgeStore; piece 3: parent progress screen)
 **Branch:** `spec/reading-cartridge`
@@ -15,6 +15,13 @@ The reading cartridge is the first subject plugged into the merged subject-agnos
 and three pluggable activities — blending practice (formative, reused), build-the-word
 (formative, new), and a word-level read-aloud check (authoritative) — wired into a new
 `/student/adaptive` practice loop for one child on an iPad.
+
+This is a **development prototype that doubles as its own requirements instrument**: a gated
+builder feedback recorder lets Eli/Ilana speak voice notes while using the app; notes are
+transcribed and context-stamped (which concept/activity/result was live) so a later Claude
+session can distill them into modification and feature tasks. Curriculum grows from live use,
+not upfront authoring — the strand below is a seed, deliberately small, mostly derived from
+existing fixtures.
 
 ## 2. Behavioral contract
 
@@ -123,11 +130,37 @@ All statements are testable observations. "Session" = one continuous visit to `/
   `dir="ltr"` (R4), no italics (R5), light mode (R12), touch targets (R19), no idle
   animations during activities (R26), no game-economy framing (R27).
 
+### 2.7 Builder feedback capture (dev-prototype affordance)
+
+- **F1.** Visiting `/student/adaptive?builder=1` sets a session flag; only then does a small
+  floating note button (🎙️) appear, in every state of the loop. Without the flag the button
+  does not render — real students never see it.
+- **F2.** Tap starts recording a voice note (existing MediaRecorder pipeline); tap again stops,
+  transcribes via `/api/transcribe`, and saves a row to a standalone `feedback_notes` table:
+  `{ created_at, user_id, transcript, context }`.
+- **F3.** `context` is stamped automatically at note start: route, active conceptId,
+  activityType, mode (learn/review), the concept's session rep count, and the last up-to-5
+  activity results of the session `{ conceptId, activityType, correct, score, authoritative }`.
+- **F4.** When transcription or the table write fails, the note's audio-transcript payload is
+  queued in localStorage and retried on the next note or next page load — a note is never
+  silently lost.
+- **F5.** Recording during an active read-aloud capture is blocked (one mic consumer at a
+  time): the button is disabled while an activity is recording the child.
+- **F6.** Distillation is out-of-app: a Claude session reads recent `feedback_notes` and
+  produces `docs/feedback/YYYY-MM-DD-dogfood.md` (modifications / new features / to-dos /
+  open questions) as the input to the next brainstorm round. Until the button ships, the
+  interim path is an external voice recording + the existing `/transcribe` skill.
+
 ## 3. Explicit non-behaviors
 
-- The system must not write anything to Supabase in this piece (no practice_sessions,
-  no activity_attempts, no coins) — persistence is piece 2, rewards tie-in is piece 3.
-  Wiring them early would couple this piece to schema decisions piece 2 owns.
+- The system must not write practice or knowledge state to Supabase in this piece (no
+  practice_sessions, no activity_attempts, no coins, no knowledge tables) — persistence is
+  piece 2, rewards tie-in is piece 3. Wiring them early would couple this piece to schema
+  decisions piece 2 owns. The standalone `feedback_notes` table (F2) is the single allowed
+  write path; it references no practice schema.
+- The feedback recorder must not store audio — transcript text plus context only. The notes
+  are the observing adult's voice; still, no recordings of a child's session are retained
+  (COPPA posture: keep the dev-feedback surface free of child data).
 - The system must not modify the live `/student/practice` flow, its components' behavior, or
   the `content` table pipeline — Ilana's students are mid-pilot on it.
 - The engine must not gain any reading-specific knowledge (no word/payload inspection); the
@@ -151,6 +184,7 @@ All statements are testable observations. "Session" = one continuous visit to `/
 | Web Speech TTS (`src/lib/speech.ts`) | word string out → audio | Locked single voice (R10) | P4: build-the-word unavailable → substitute blending | Twin in tests (interface stub); real in browser. |
 | MediaRecorder / mic | permission + audio | Existing `speech-recognition.ts` flow | R2: formative-only session, capped at 10 activities | Twin in tests; real in browser. |
 | Supabase auth | session in | Same server-component gate as `/student/practice` | Redirect to `/login` | Real (existing pattern), no new queries. |
+| Supabase `feedback_notes` | note row out | `{ created_at, user_id, transcript, context jsonb }`, RLS: owner-only | F4: localStorage queue + retry | Twin in tests (store stub); real in browser. |
 
 ## 5. Behavioral scenarios
 
@@ -193,6 +227,24 @@ Resolved by spec author (defensible defaults, veto at spec review):
 12. **Distractor count** → exactly 2 distractors for 3-letter words (B2): 5 tiles total is
   within ages-6-8 working-memory comfort and fits 56 px tiles on iPad portrait.
 
+Added from Eli's spec-review feedback (voice note, 2026-07-02): the prototype must double as
+its own requirements instrument — "record voice notes as the user does it, distill into
+modifications and new feature tasks". Of his two options (in-app capture vs external
+recording), the spec takes a thin hybrid:
+
+13. **In-app capture chosen for context-stamping** — an external recording can't know which
+  concept/activity/result was on screen when a note was spoken; the app can (F3). It also
+  works when Ilana dogfoods solo on the iPad. External recording + `/transcribe` remains the
+  interim path until the button ships (F6).
+14. **Storage** → a standalone Supabase `feedback_notes` table (owner-scoped RLS), because
+  notes recorded on the iPad must reach Eli's Mac without cables; it deliberately references
+  no practice schema so the piece-2 boundary holds. Transcript only, never audio (§3).
+15. **Distillation lives outside the app** (F6) — turning transcripts into task docs is a
+  Claude-session job, not app code; building an in-app distiller would be premature.
+16. **Curriculum de-risking** — the strand words are seeded from the existing
+  `fixturePhonicsContent` lists and mechanically validated (C3); KB skills are used to
+  spot-check, not to author from scratch. Content evolution then flows from feedback notes.
+
 ## 7. Implementation constraints
 
 - TypeScript, Next.js App Router conventions as in the existing codebase; cartridge code in
@@ -202,7 +254,9 @@ Resolved by spec author (defensible defaults, veto at spec review):
   extract decision logic into tested pure modules.
 - Reuse, do not fork: `BlendingExercise`, `speech-recognition.ts`, `speech.ts`,
   `useSpeechRecognition` (its lenient behavior unchanged; the strict matcher is a new module).
-- Word lists and accept-lists authored with `/wordpets-content` + `/curriculum-lookup`
-  grounding; rules R1-R27 apply to every child-facing surface.
+- Word lists and accept-lists seeded from `src/lib/fixtures/student.ts`, spot-checked with
+  `/wordpets-content` + `/curriculum-lookup`; rules R1-R27 apply to every child-facing surface.
+- `feedback_notes` migration as raw SQL alongside the existing `supabase/schema-v2.sql`
+  pattern, with owner-only RLS (`user_id = auth.uid()`).
 - Branch discipline: work on `feat/…` off `main`; never commit to `main`; commit trailer
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
