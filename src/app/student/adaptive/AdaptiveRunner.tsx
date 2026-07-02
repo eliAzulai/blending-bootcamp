@@ -28,6 +28,10 @@ export default function AdaptiveRunner({ studentId, builderMode }: Props) {
   const [micGranted, setMicGranted] = useState(false);
   const [current, setCurrent] = useState<ActivityRequest | null>(null);
   const [servedCount, setServedCount] = useState(0);
+  // F3: policy reps for `current`'s concept, snapshotted when it's set (in an
+  // event-handler callback, not render) so the FeedbackButton context stamp
+  // never has to read a ref during render.
+  const [currentRep, setCurrentRep] = useState(0);
 
   const engineRef = useRef<Engine | null>(null);
   const policyRef = useRef<SessionPolicy | null>(null);
@@ -47,6 +51,7 @@ export default function AdaptiveRunner({ studentId, builderMode }: Props) {
       return;
     }
     setCurrent(req);
+    setCurrentRep(policyRef.current?.repsFor(req.conceptId) ?? 0);
   }, [studentId]);
 
   async function start() {
@@ -135,7 +140,7 @@ export default function AdaptiveRunner({ studentId, builderMode }: Props) {
         </div>
       )}
 
-      {builderMode && current?.activityType !== "read_aloud_check" && (
+      {builderMode && (
         <FeedbackButton
           eventLog={eventLog}
           active={
@@ -143,8 +148,8 @@ export default function AdaptiveRunner({ studentId, builderMode }: Props) {
               ? {
                   conceptId: current.conceptId,
                   activityType: current.activityType,
-                  mode: "learn",
-                  rep: servedCount,
+                  mode: (current.payload as ReadingPayload).mode,
+                  rep: currentRep,
                 }
               : null
           }

@@ -36,11 +36,22 @@ export function createReadingCartridge(
         payload = {
           kind: "blending",
           words: [bank[i], bank[(i + 1) % bank.length]],
+          mode,
         };
       } else if (activityType === "build_word") {
-        payload = { kind: "build_word", word: bank[i].word, tiles: makeTiles(bank[i].word) };
+        payload = {
+          kind: "build_word",
+          word: bank[i].word,
+          tiles: makeTiles(bank[i].word),
+          mode,
+        };
       } else {
-        payload = { kind: "read_aloud_check", word: bank[i].word, accept: bank[i].accept };
+        payload = {
+          kind: "read_aloud_check",
+          word: bank[i].word,
+          accept: bank[i].accept,
+          mode,
+        };
       }
       return { conceptId, activityType, payload };
     },

@@ -82,7 +82,7 @@ export async function listenForSpeech(
       _micStream = stream;
     } catch {
       console.error("[WordPets] Failed to get mic stream");
-      return empty;
+      return { transcripts: [], confidence: 0, error: true };
     }
   }
 
@@ -187,6 +187,11 @@ export async function listenForSpeech(
       }
     }, timeoutMs);
   });
+}
+
+/** True while an activity recording is in progress (one-mic-consumer guard). */
+export function isCapturing(): boolean {
+  return _activeRecorder !== null;
 }
 
 /** Cancel any in-progress recording. Safe to call anytime. */

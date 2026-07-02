@@ -59,4 +59,14 @@ describe("SessionPolicy", () => {
     p.recordCompleted("at");
     expect(p.wordIndexFor("at", bank.length)).toBe(1);
   });
+
+  it("reports completed reps per concept for context stamping (F3)", () => {
+    const p = new SessionPolicy({ ttsAvailable: true, micAvailable: true });
+    expect(p.repsFor("at")).toBe(0);
+    p.recordCompleted("at");
+    expect(p.repsFor("at")).toBe(1);
+    p.recordCompleted("at");
+    expect(p.repsFor("at")).toBe(2);
+    expect(p.repsFor("an")).toBe(0);
+  });
 });

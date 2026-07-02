@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient, supabaseIsConfigured } from "@/lib/supabase/client";
+import { isCapturing } from "@/lib/speech-recognition";
 import {
   FeedbackQueue,
   SessionEventLog,
@@ -41,21 +42,31 @@ function makeSaver() {
 export default function FeedbackButton({ eventLog, active }: Props) {
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const contextRef = useRef<Record<string, unknown>>({});
   const queueRef = useRef<FeedbackQueue | null>(null);
+  const failedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     queueRef.current = new FeedbackQueue(makeSaver(), window.localStorage);
     void queueRef.current.flush(); // F4: page-load retry
   }, []);
 
-  // Unmount mid-recording is routine (F5 hides this button whenever the next
-  // activity is a read_aloud_check). Never leak the mic: tear down the active
-  // recorder and stop every track. The in-progress note is dropped — acceptable
-  // for a builder-only dev tool; a live mic indicator lying to the user is not.
+  // Clear the transient failed-state timer on unmount so it never fires
+  // (and calls setState) after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (failedTimerRef.current !== null) clearTimeout(failedTimerRef.current);
+    };
+  }, []);
+
+  // Unmount mid-recording is routine (the runner can swap activities out from
+  // under this button). Never leak the mic: tear down the active recorder and
+  // stop every track. The in-progress note is dropped — acceptable for a
+  // builder-only dev tool; a live mic indicator lying to the user is not.
   useEffect(() => {
     return () => {
       const recorder = recorderRef.current;
@@ -75,6 +86,8 @@ export default function FeedbackButton({ eventLog, active }: Props) {
   async function toggle() {
     if (busy) return;
     if (!recording) {
+      // F5: one mic consumer — never start a note while an activity is recording.
+      if (isCapturing()) return;
       // F3: stamp context at note START.
       contextRef.current = { ...eventLog.context(window.location.pathname, active) };
       let stream: MediaStream;
@@ -101,7 +114,11 @@ export default function FeedbackButton({ eventLog, active }: Props) {
           }
         } catch {
           // transcription itself failed — nothing to queue (no transcript, and
-          // we never store audio); the builder simply re-records.
+          // we never store audio); the builder simply re-records. Surface a
+          // transient visible failure state so it isn't silent.
+          setFailed(true);
+          if (failedTimerRef.current !== null) clearTimeout(failedTimerRef.current);
+          failedTimerRef.current = setTimeout(() => setFailed(false), 2500);
         } finally {
           setBusy(false);
         }
@@ -120,11 +137,11 @@ export default function FeedbackButton({ eventLog, active }: Props) {
     <button
       onClick={toggle}
       className={`fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg ${
-        recording ? "bg-red-500" : "bg-gray-800"
+        failed ? "bg-amber-600" : recording ? "bg-red-500" : "bg-gray-800"
       } text-2xl text-white`}
-      aria-label={recording ? "Stop note" : "Record a builder note"}
+      aria-label={failed ? "Note failed, tap to record again" : recording ? "Stop note" : "Record a builder note"}
     >
-      {busy ? "…" : recording ? "■" : "🎙️"}
+      {failed ? "!" : busy ? "…" : recording ? "■" : "🎙️"}
     </button>
   );
 }

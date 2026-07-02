@@ -85,13 +85,16 @@ describe("reading cartridge — full loop", () => {
     const bp = blending.payload as ReadingPayload;
     expect(bp.kind).toBe("blending");
     if (bp.kind === "blending") expect(bp.words).toHaveLength(2); // P6: 2 words per rep
+    expect(bp.mode).toBe("learn"); // F3: payload carries true learn/review mode
     policy.recordCompleted("at");
     const bw = cartridge.buildActivity("at", "learn").payload as ReadingPayload;
     expect(bw.kind).toBe("build_word");
     if (bw.kind === "build_word") expect(bw.tiles).toHaveLength(5);
+    expect(bw.mode).toBe("learn");
     policy.recordCompleted("at");
     const ra = cartridge.buildActivity("at", "learn").payload as ReadingPayload;
     expect(ra.kind).toBe("read_aloud_check");
     if (ra.kind === "read_aloud_check") expect(typeof ra.word).toBe("string");
+    expect(ra.mode).toBe("learn");
   });
 });

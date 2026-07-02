@@ -12,15 +12,18 @@ export interface BankWord {
 export interface BlendingPayload {
   kind: "blending";
   words: BankWord[];
+  mode: "learn" | "review";
 }
 export interface BuildWordPayload {
   kind: "build_word";
   word: string;
   tiles: string[];
+  mode: "learn" | "review";
 }
 export interface ReadAloudPayload {
   kind: "read_aloud_check";
   word: string;
   accept: string[];
+  mode: "learn" | "review";
 }
 export type ReadingPayload = BlendingPayload | BuildWordPayload | ReadAloudPayload;

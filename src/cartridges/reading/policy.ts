@@ -44,4 +44,9 @@ export class SessionPolicy {
   wordIndexFor(conceptId: string, bankSize: number): number {
     return (this.reps.get(conceptId) ?? 0) % bankSize;
   }
+
+  /** Completed session reps for a concept (F3 context stamping). */
+  repsFor(conceptId: string): number {
+    return this.reps.get(conceptId) ?? 0;
+  }
 }
