@@ -41,6 +41,7 @@ The original **Phase 0 — Blending Bootcamp** (14-day standalone phonics progra
 - `/student`, `/student/practice` — child home + practice runner. Both server components; activities themselves are client components.
 - `/teacher`, `/teacher/add-student`, `/teacher/students/[id]` — teacher dashboard. All server components.
 - `/api/transcribe`, `/auth/callback` — supporting endpoints.
+- `/student/adaptive` — adaptive reading loop (engine + reading cartridge; dev prototype, MemoryStore-backed). `?builder=1` reveals the builder feedback recorder. Spec: `docs/superpowers/specs/2026-07-02-wordpets-reading-cartridge-design.md`.
 
 ### Components
 
