@@ -12,6 +12,8 @@ export interface SpeechResult {
   transcripts: string[];
   /** Highest confidence score from the results (1.0 for Whisper) */
   confidence: number;
+  /** true when /api/transcribe errored (network / non-2xx) — distinct from silence. */
+  error?: boolean;
 }
 
 export interface ListenOptions {
@@ -138,7 +140,7 @@ export async function listenForSpeech(
 
         if (!res.ok) {
           console.error("[WordPets] Transcribe failed:", res.status);
-          settle(empty);
+          settle({ transcripts: [], confidence: 0, error: true });
           return;
         }
 
@@ -158,7 +160,7 @@ export async function listenForSpeech(
         }
       } catch (err) {
         console.error("[WordPets] Transcribe error:", err);
-        settle(empty);
+        settle({ transcripts: [], confidence: 0, error: true });
       }
     };
 
