@@ -29,7 +29,10 @@ export interface BuddyRoutineConfig {
   warmupSounds: string[];
 }
 
-const ABBREVIATION_END = /(?:mr|mrs|ms|dr|st|jr|sr)\.$/i;
+// Deliberate trade-off: an abbreviation that genuinely ends a sentence
+// ("Main St. It was fun.") still merges — a too-long sentence beats a
+// nonsense fragment, and real NLP is out of scope for the spike.
+const ABBREVIATION_END = /\b(?:mr|mrs|ms|dr|st|jr|sr)\.$/i;
 
 export function splitSentences(text: string): string[] {
   const raw = text

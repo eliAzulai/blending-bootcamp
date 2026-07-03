@@ -29,6 +29,11 @@ describe("splitSentences", () => {
       "Then he ran.",
     ]);
   });
+
+  it("still splits after ordinary words that end like abbreviations", () => {
+    expect(splitSentences("He came in first. Then he ran.")).toHaveLength(2);
+    expect(splitSentences("The dog is lost. The cat is sad.")).toHaveLength(2);
+  });
 });
 
 describe("pickWarmupSounds", () => {
