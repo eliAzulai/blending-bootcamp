@@ -26,6 +26,11 @@ const VERDICT_STYLE: Record<string, string> = {
 export default function BuddyReview({ passageId, sentences }: BuddyReviewProps) {
   const [childAlias, setChildAlias] = useState("");
   // adultCorrect[sentenceIdx][wordIdx] = did the child ACTUALLY read it correctly
+  // Invariant: this initializer runs once on mount and assumes `sentences`
+  // is a stable snapshot for the component's lifetime (BuddySpike sets
+  // reviewSentences once, right before mounting this component). A future
+  // caller whose sentences prop changes after mount must key-remount this
+  // component, or the toggle grid silently desyncs from the words shown.
   const [adultCorrect, setAdultCorrect] = useState<boolean[][]>(() =>
     sentences.map((s) => s.words.map((w) => w.verdict === "read")),
   );
@@ -65,7 +70,9 @@ export default function BuddyReview({ passageId, sentences }: BuddyReviewProps) 
     a.href = url;
     a.download = `buddy-session-${childAlias.trim() || "x"}-${Date.now()}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    // iOS Safari hands the download to an async save sheet; revoking the
+    // object URL immediately can truncate the file. Defer the revoke.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (
@@ -74,11 +81,14 @@ export default function BuddyReview({ passageId, sentences }: BuddyReviewProps) 
         Grown-up review
       </h1>
       <p className="text-sm text-gray-500">
-        Machine transcripts below may be inaccurate. Replay each clip. A word
-        chip shows what the machine decided — tap any chip the machine got
-        wrong. Green = machine heard it read correctly; orange = machine heard
-        a different word; red = machine heard nothing for it. A tapped chip
-        flips your verdict (ring = you marked it as actually read correctly).
+        Machine transcripts below may be inaccurate. Listen to each clip, then
+        check the chips. Green chip = the machine thinks this word was read
+        correctly. Orange chip = the machine heard a different word. Red chip
+        = the machine heard nothing for it. Tap a chip only when the machine
+        got it wrong: tap a green chip if the child actually misread or
+        skipped that word, and tap an orange or red chip if the child
+        actually read it correctly. A blue ring means the word is currently
+        marked as read correctly, whatever its color says.
       </p>
 
       {sentences.map((s, si) => (
