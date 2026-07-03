@@ -10,6 +10,8 @@ export interface ClipResult {
   transcript: string;
 }
 
+// Module-level state assumes the caller serializes startClip/stopClip pairs
+// (one clip in flight at a time) — concurrent clips are not supported.
 let _recorder: MediaRecorder | null = null;
 let _chunks: Blob[] = [];
 
@@ -34,8 +36,9 @@ export async function startClip(): Promise<boolean> {
   // doesn't leak.
   _releaseActiveRecorder();
 
+  let stream: MediaStream | null = null;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
       ? "audio/webm;codecs=opus"
       : MediaRecorder.isTypeSupported("audio/webm")
@@ -50,7 +53,12 @@ export async function startClip(): Promise<boolean> {
     };
     _recorder.start(100);
     return true;
-  } catch {
+  } catch (err) {
+    // Release the mic if getUserMedia succeeded but recorder setup failed —
+    // otherwise the stream leaks and the browser recording indicator stays on.
+    stream?.getTracks().forEach((t) => t.stop());
+    _recorder = null;
+    console.error("[WordPets] startClip failed:", err);
     return false;
   }
 }
@@ -79,10 +87,14 @@ export async function stopClip(): Promise<ClipResult> {
     const form = new FormData();
     form.append("audio", blob, "audio.webm");
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
-    if (!res.ok) return { blob, transcript: "" };
+    if (!res.ok) {
+      console.error("[WordPets] buddy transcribe failed:", res.status);
+      return { blob, transcript: "" };
+    }
     const data = await res.json();
     return { blob, transcript: (data.text ?? "").trim() };
-  } catch {
+  } catch (err) {
+    console.error("[WordPets] buddy transcribe error:", err);
     return { blob, transcript: "" };
   }
 }
