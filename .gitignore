@@ -47,3 +47,6 @@ next-env.d.ts
 
 # supabase CLI scratch
 supabase/.temp/
+
+# buddy spike: local session exports (child data — never committed)
+spike-data/

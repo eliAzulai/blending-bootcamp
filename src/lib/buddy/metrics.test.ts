@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeMetrics,
+  parseSessionExport,
   wordsFromSessions,
   type GradedWord,
   type SessionExport,
@@ -65,5 +66,43 @@ describe("wordsFromSessions", () => {
       ],
     };
     expect(wordsFromSessions([session, session])).toHaveLength(6);
+  });
+});
+
+describe("parseSessionExport", () => {
+  const valid = {
+    childAlias: "M",
+    passageId: "p",
+    date: "2026-07-06",
+    sentences: [
+      {
+        sentenceIndex: 0,
+        target: "The cat sat.",
+        transcript: "the cat sat",
+        words: [
+          { word: "the", heard: "the", asrVerdict: "read", adultVerdict: "correct" },
+        ],
+      },
+    ],
+  };
+
+  it("accepts a valid export and returns it typed", () => {
+    expect(parseSessionExport(valid).childAlias).toBe("M");
+  });
+
+  it("rejects a typo'd adultVerdict with a specific reason", () => {
+    const bad = structuredClone(valid);
+    (bad.sentences[0].words[0] as { adultVerdict: string }).adultVerdict = "eror";
+    expect(() => parseSessionExport(bad)).toThrow(/adultVerdict invalid: eror/);
+  });
+
+  it("rejects a missing words array", () => {
+    const bad = structuredClone(valid) as Record<string, unknown>;
+    delete (bad.sentences as Record<string, unknown>[])[0].words;
+    expect(() => parseSessionExport(bad)).toThrow(/words missing/);
+  });
+
+  it("rejects non-object input", () => {
+    expect(() => parseSessionExport("[]")).toThrow(/not an object/);
   });
 });
