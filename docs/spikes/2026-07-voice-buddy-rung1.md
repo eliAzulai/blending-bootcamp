@@ -98,6 +98,12 @@ hand-edited file (missing field, bad verdict value, not valid JSON) stops
 the run with a specific error naming the file and field, rather than
 silently skewing the metrics. Fix or remove the bad file and re-run.
 
+The output includes a per-file word/error breakdown, warnings for
+duplicate or zero-word exports, and ends with an explicit verdict line —
+`RESULT: GREEN|YELLOW|RED|INSUFFICIENT` — naming the gate that fired.
+INSUFFICIENT means there are not yet enough adult-marked errors or graded
+words to evaluate the gates.
+
 | Gate | Condition | Meaning |
 |---|---|---|
 | **GREEN** | detection ≥ 70% AND false alarms ≤ 10% | ASR is good enough for gentle in-session correction. Green-light rung 1.5: buddy reacts to errors ("let's try that word again") + start rung-2 (conversational voice) planning. |

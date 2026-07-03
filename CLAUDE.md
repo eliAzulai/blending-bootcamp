@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — production build (validates all routes)
 - `npm run lint` — ESLint
 - `npm run pull-secrets` — pull env vars from Infisical into `.env.local`
-- No JS/TS test framework yet
+- `npm test` — vitest (engine + buddy-spike unit tests, colocated `*.test.ts`)
 - `kb/.venv/bin/pytest kb/tests/ -q` — Python tests for the teaching-resources KB (21 tests). Works from repo root or `kb/` (`kb/pyproject.toml` puts the repo root on `pythonpath`, so no `PYTHONPATH=.` needed).
 
 ## What This Is
@@ -41,6 +41,7 @@ The original **Phase 0 — Blending Bootcamp** (14-day standalone phonics progra
 - `/student`, `/student/practice` — child home + practice runner. Both server components; activities themselves are client components.
 - `/teacher`, `/teacher/add-student`, `/teacher/students/[id]` — teacher dashboard. All server components.
 - `/api/transcribe`, `/auth/callback` — supporting endpoints.
+- `/spike/buddy` — rung-1 voice-buddy ASR-validation spike (auth-gated, not linked from any child/teacher surface). Run protocol: `docs/spikes/2026-07-voice-buddy-rung1.md`.
 
 ### Components
 
