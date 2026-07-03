@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeMetrics,
+  evaluateGate,
   parseSessionExport,
   wordsFromSessions,
   type GradedWord,
@@ -104,5 +105,61 @@ describe("parseSessionExport", () => {
 
   it("rejects non-object input", () => {
     expect(() => parseSessionExport("[]")).toThrow(/not an object/);
+  });
+});
+
+describe("evaluateGate", () => {
+  /** n graded words with the given verdicts, distinct word labels */
+  const graded = (
+    n: number,
+    asrVerdict: GradedWord["asrVerdict"],
+    adultVerdict: GradedWord["adultVerdict"],
+  ): GradedWord[] =>
+    Array.from({ length: n }, (_, i) => ({
+      word: `w${asrVerdict}-${adultVerdict}-${i}`,
+      asrVerdict,
+      adultVerdict,
+    }));
+
+  it("GREEN exactly at the 70% detection / 10% false-alarm boundary", () => {
+    // 10 adult errors: 7 flagged (detected), 3 read (missed) → detection 7/10
+    // 10 adult correct: 1 flagged (false alarm), 9 read → false alarms 1/10
+    const m = computeMetrics([
+      ...graded(7, "misread", "error"),
+      ...graded(3, "read", "error"),
+      ...graded(1, "misread", "correct"),
+      ...graded(9, "read", "correct"),
+    ]);
+    expect(m.detectionRate).toBeCloseTo(0.7);
+    expect(m.falseAlarmRate).toBeCloseTo(0.1);
+    expect(evaluateGate(m)).toBe("GREEN");
+  });
+
+  it("YELLOW when detection is below 70% but false alarms stay low", () => {
+    // detection 1/2 = 50%, false alarms 0/8 = 0%
+    const m = computeMetrics([
+      ...graded(1, "skipped", "error"),
+      ...graded(1, "read", "error"),
+      ...graded(8, "read", "correct"),
+    ]);
+    expect(evaluateGate(m)).toBe("YELLOW");
+  });
+
+  it("RED when false alarms exceed 10%, even with perfect detection", () => {
+    // detection 2/2 = 100%, false alarms 2/10 = 20%
+    const m = computeMetrics([
+      ...graded(2, "misread", "error"),
+      ...graded(2, "misread", "correct"),
+      ...graded(8, "read", "correct"),
+    ]);
+    expect(evaluateGate(m)).toBe("RED");
+  });
+
+  it("INSUFFICIENT when a rate has no denominator yet", () => {
+    expect(evaluateGate(computeMetrics([]))).toBe("INSUFFICIENT");
+    // graded words but no adult-marked errors → detectionRate null
+    expect(evaluateGate(computeMetrics(graded(5, "read", "correct")))).toBe(
+      "INSUFFICIENT",
+    );
   });
 });

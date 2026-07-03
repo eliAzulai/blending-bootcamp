@@ -100,3 +100,15 @@ export function computeMetrics(words: GradedWord[]): SpikeMetrics {
     falseAlarmRate: adultCorrect > 0 ? falseAlarms / adultCorrect : null,
   };
 }
+
+export type GateResult = "GREEN" | "YELLOW" | "RED" | "INSUFFICIENT";
+
+/**
+ * The spike's go/no-go gate. RED outranks everything (false alarms punish
+ * correct reading); INSUFFICIENT when a rate has no denominator yet.
+ */
+export function evaluateGate(m: SpikeMetrics): GateResult {
+  if (m.detectionRate === null || m.falseAlarmRate === null) return "INSUFFICIENT";
+  if (m.falseAlarmRate > 0.10) return "RED";
+  return m.detectionRate >= 0.70 ? "GREEN" : "YELLOW";
+}
