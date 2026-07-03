@@ -29,11 +29,24 @@ export interface BuddyRoutineConfig {
   warmupSounds: string[];
 }
 
+const ABBREVIATION_END = /(?:mr|mrs|ms|dr|st|jr|sr)\.$/i;
+
 export function splitSentences(text: string): string[] {
-  return text
+  const raw = text
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
+  // Re-join fragments that were split after an abbreviation ("Mr." + "Smith...").
+  const out: string[] = [];
+  for (const piece of raw) {
+    const prev = out[out.length - 1];
+    if (prev && ABBREVIATION_END.test(prev)) {
+      out[out.length - 1] = `${prev} ${piece}`;
+    } else {
+      out.push(piece);
+    }
+  }
+  return out;
 }
 
 /** First three distinct starting letters of the passage's words. */
@@ -65,7 +78,11 @@ export function buildRoutine(config: BuddyRoutineConfig): BuddyStep[] {
     });
   }
 
-  splitSentences(config.passageText).forEach((sentence, i) => {
+  const sentences = splitSentences(config.passageText);
+  if (sentences.length === 0) {
+    throw new Error("buildRoutine: passage has no sentences");
+  }
+  sentences.forEach((sentence, i) => {
     steps.push({
       type: "read_sentence",
       buddyLine:

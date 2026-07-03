@@ -15,6 +15,20 @@ describe("splitSentences", () => {
   it("handles a single sentence without trailing whitespace", () => {
     expect(splitSentences("Run fox run.")).toEqual(["Run fox run."]);
   });
+
+  it("does not split after common abbreviations", () => {
+    expect(splitSentences("Mr. Smith went home. He was tired.")).toEqual([
+      "Mr. Smith went home.",
+      "He was tired.",
+    ]);
+  });
+
+  it("handles an abbreviation mid-sentence", () => {
+    expect(splitSentences("He saw Dr. Lee. Then he ran.")).toEqual([
+      "He saw Dr. Lee.",
+      "Then he ran.",
+    ]);
+  });
 });
 
 describe("pickWarmupSounds", () => {
@@ -60,5 +74,11 @@ describe("buildRoutine", () => {
   it("greets and praises the child by name", () => {
     expect(routine[0].buddyLine).toContain("Maya");
     expect(routine[routine.length - 1].buddyLine).toContain("Maya");
+  });
+
+  it("throws on a passage with no sentences", () => {
+    expect(() =>
+      buildRoutine({ childName: "X", passageText: "   ", warmupSounds: [] }),
+    ).toThrow(/no sentences/);
   });
 });
