@@ -15,7 +15,11 @@ export interface AlignedWord {
 }
 
 export function normalizeWord(w: string): string {
-  return w.toLowerCase().replace(/[^a-z']/g, "");
+  // Digits are kept: Whisper often writes numerals ("3" for a spoken
+  // "three"). Dropping them would erase the heard token and wrongly mark
+  // the target word skipped; keeping them makes a spelled-out target vs
+  // numeral transcript show up as a misread, visible to the grader.
+  return w.toLowerCase().replace(/[^a-z0-9']/g, "");
 }
 
 export function tokenize(text: string): string[] {

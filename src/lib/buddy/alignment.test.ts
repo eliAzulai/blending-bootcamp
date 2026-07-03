@@ -7,6 +7,10 @@ describe("normalizeWord", () => {
     expect(normalizeWord("don't")).toBe("don't");
     expect(normalizeWord("mat.")).toBe("mat");
   });
+
+  it("keeps digits so numeral transcripts stay visible", () => {
+    expect(normalizeWord("3!")).toBe("3");
+  });
 });
 
 describe("tokenize", () => {
@@ -42,5 +46,9 @@ describe("alignWords", () => {
   it("handles an empty transcript as all skipped", () => {
     const result = alignWords("Run fox run.", "");
     expect(result.every((w) => w.verdict === "skipped")).toBe(true);
+  });
+
+  it("returns an empty array for an empty target sentence", () => {
+    expect(alignWords("", "the cat")).toEqual([]);
   });
 });
