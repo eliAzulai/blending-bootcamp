@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fixtureReadAloudPassages } from "@/lib/fixtures/student";
 import { alignWords } from "@/lib/buddy/alignment";
 import {
@@ -8,7 +8,7 @@ import {
   pickWarmupSounds,
   type BuddyStep,
 } from "@/lib/buddy/routine";
-import { startClip, stopClip } from "@/lib/buddy/recorder";
+import { abortClip, startClip, stopClip } from "@/lib/buddy/recorder";
 import { cancelSpeech, speakPhoneme, speakSentence } from "@/lib/speech";
 import BuddyReview, { type RecordedSentence } from "./BuddyReview";
 
@@ -16,6 +16,11 @@ type Phase = "setup" | "session" | "gate" | "review";
 type RecState = "waiting" | "recording" | "processing";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// speechSynthesis on iOS can stall without firing onend; never let one
+// stuck utterance wedge the whole pre-queued session.
+const speakWithTimeout = (p: Promise<void>, ms = 8000) =>
+  Promise.race([p, delay(ms)]);
 
 export default function BuddySpike() {
   const [phase, setPhase] = useState<Phase>("setup");
@@ -30,6 +35,18 @@ export default function BuddySpike() {
     [],
   );
   const recordedRef = useRef<RecordedSentence[]>([]);
+  const mountedRef = useRef(true);
+
+  // Unmount guard (house pattern from useSpeechRecognition): stop TTS,
+  // release any in-flight mic recording, and block setState on a dead tree.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      cancelSpeech();
+      abortClip();
+    };
+  }, []);
 
   const passageText =
     customText.trim() ||
@@ -42,12 +59,15 @@ export default function BuddySpike() {
     async (queue: BuddyStep[], from: number) => {
       let i = from;
       while (i < queue.length && !queue[i].records) {
+        if (!mountedRef.current) return;
         const step = queue[i];
         setStepIndex(i);
-        await speakSentence(step.buddyLine);
+        await speakWithTimeout(speakSentence(step.buddyLine));
+        if (!mountedRef.current) return;
         if (step.type === "warmup_sound" && step.target) {
-          await speakPhoneme(step.target);
+          await speakWithTimeout(speakPhoneme(step.target), 4000);
           await delay(1800); // pause for the child's echo (not recorded)
+          if (!mountedRef.current) return;
         }
         if (step.type === "finish") {
           setPhase("gate");
@@ -57,7 +77,8 @@ export default function BuddySpike() {
       }
       if (i < queue.length) {
         setStepIndex(i);
-        await speakSentence(queue[i].buddyLine);
+        await speakWithTimeout(speakSentence(queue[i].buddyLine));
+        if (!mountedRef.current) return;
         setRecState("waiting");
       }
     },
@@ -77,8 +98,14 @@ export default function BuddySpike() {
     await runFrom(routine, 0);
   }, [childName, passageText, runFrom]);
 
+  // Buddy audio can never leak into a clip, by construction: recording only
+  // starts after the prompt's TTS promise has resolved (runFrom awaits it
+  // before showing the Start button), and "Great reading!" is only spoken
+  // after stopClip has resolved.
   const handleRecord = useCallback(async () => {
+    setMicError(false); // clear any stale banner from a failed prior attempt
     const ok = await startClip();
+    if (!mountedRef.current) return;
     if (!ok) {
       setMicError(true);
       return;
@@ -90,6 +117,7 @@ export default function BuddySpike() {
     setRecState("processing");
     const step = steps[stepIndex];
     const { blob, transcript } = await stopClip();
+    if (!mountedRef.current) return;
     recordedRef.current.push({
       sentenceIndex: step.sentenceIndex ?? 0,
       target: step.target ?? "",
@@ -98,7 +126,7 @@ export default function BuddySpike() {
       words: alignWords(step.target ?? "", transcript),
     });
     // R7: always positive, never a verdict, regardless of what ASR heard.
-    await speakSentence("Great reading!");
+    await speakWithTimeout(speakSentence("Great reading!"));
     await runFrom(steps, stepIndex + 1);
   }, [steps, stepIndex, runFrom]);
 

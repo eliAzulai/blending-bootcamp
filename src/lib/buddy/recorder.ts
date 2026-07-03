@@ -30,6 +30,11 @@ function _releaseActiveRecorder(): void {
   }
 }
 
+/** Unmount/cancel path — discards the in-flight clip and releases the mic without transcribing. */
+export function abortClip(): void {
+  _releaseActiveRecorder();
+}
+
 export async function startClip(): Promise<boolean> {
   // Guard against startClip being called twice without an intervening
   // stopClip(): release the previous recorder's mic stream first so it
