@@ -18,9 +18,10 @@ type RecState = "waiting" | "recording" | "processing";
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // speechSynthesis on iOS can stall without firing onend; never let one
-// stuck utterance wedge the whole pre-queued session.
-const speakWithTimeout = (p: Promise<void>, ms = 8000) =>
-  Promise.race([p, delay(ms)]);
+// stuck utterance wedge the whole pre-queued session. Cap scales with
+// length so slow-rate long lines (greeting) aren't truncated mid-word.
+const speakWithTimeout = (p: Promise<void>, text: string) =>
+  Promise.race([p, delay(3000 + 600 * text.split(/\s+/).length)]);
 
 export default function BuddySpike() {
   const [phase, setPhase] = useState<Phase>("setup");
@@ -62,10 +63,10 @@ export default function BuddySpike() {
         if (!mountedRef.current) return;
         const step = queue[i];
         setStepIndex(i);
-        await speakWithTimeout(speakSentence(step.buddyLine));
+        await speakWithTimeout(speakSentence(step.buddyLine), step.buddyLine);
         if (!mountedRef.current) return;
         if (step.type === "warmup_sound" && step.target) {
-          await speakWithTimeout(speakPhoneme(step.target), 4000);
+          await speakWithTimeout(speakPhoneme(step.target), step.target);
           await delay(1800); // pause for the child's echo (not recorded)
           if (!mountedRef.current) return;
         }
@@ -77,7 +78,10 @@ export default function BuddySpike() {
       }
       if (i < queue.length) {
         setStepIndex(i);
-        await speakWithTimeout(speakSentence(queue[i].buddyLine));
+        await speakWithTimeout(
+          speakSentence(queue[i].buddyLine),
+          queue[i].buddyLine,
+        );
         if (!mountedRef.current) return;
         setRecState("waiting");
       }
@@ -105,7 +109,12 @@ export default function BuddySpike() {
   const handleRecord = useCallback(async () => {
     setMicError(false); // clear any stale banner from a failed prior attempt
     const ok = await startClip();
-    if (!mountedRef.current) return;
+    if (!mountedRef.current) {
+      // Unmount raced the mic permission prompt: cleanup's abortClip() ran
+      // before the recorder existed, so release the just-granted mic here.
+      abortClip();
+      return;
+    }
     if (!ok) {
       setMicError(true);
       return;
@@ -126,7 +135,7 @@ export default function BuddySpike() {
       words: alignWords(step.target ?? "", transcript),
     });
     // R7: always positive, never a verdict, regardless of what ASR heard.
-    await speakWithTimeout(speakSentence("Great reading!"));
+    await speakWithTimeout(speakSentence("Great reading!"), "Great reading!");
     await runFrom(steps, stepIndex + 1);
   }, [steps, stepIndex, runFrom]);
 
