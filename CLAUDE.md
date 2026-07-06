@@ -48,6 +48,10 @@ The original **Phase 0 — Blending Bootcamp** (14-day standalone phonics progra
 - `src/components/activities/PhonicsActivity.tsx` — wraps `BlendingExercise` for the practice flow.
 - `src/components/activities/SpellingActivity.tsx` — TTS-prompted typing.
 - `src/components/activities/ReadAloudActivity.tsx` — record passage to Whisper; non-authoritative.
+- `src/components/activities/SoundHuntActivity.tsx` — tap the word you hear / that starts with a sound (`word_match_set` content).
+- `src/components/activities/WordBuilderActivity.tsx` — drag letter tiles to build the spoken word (reuses spelling wordlists; distractor letters at advanced).
+- `src/components/activities/MissingWordActivity.tsx` — drag/tap the missing word into a cloze sentence (`cloze_sentence` content); completed sentence is read aloud.
+- Shared game primitives: `src/hooks/useTileDrag.ts` (pointer-events drag — HTML5 DnD is broken on iOS Safari), `src/lib/sfx.ts` (WebAudio pop/click/chime, no asset files), `src/lib/shuffle.ts`.
 - `src/components/teacher/*` — `StudentCard`, `StatsBar`, `TagManager`, `FocusAreaToggle`, `PracticeHistory`.
 - `src/components/BlendingExercise.tsx` + `PhonemeCard.tsx` — the original phoneme blending mechanic; kept because PhonicsActivity uses it.
 - `src/components/SignOutButton.tsx` — tiny client wrapper around the server-action sign-out.
@@ -137,8 +141,10 @@ Practice content (phonics word lists, spelling word lists, read-aloud passages) 
 
 - **Source of truth**: `src/lib/fixtures/student.ts` exports typed arrays (`fixturePhonicsContent`, `fixtureSpellingContent`, `fixtureReadAloudPassages`). Hand-edits here go to the repo, not the live app.
 - **Migration**: `scripts/seed-content.ts` reads the fixtures and emits idempotent SQL (`begin / delete from content where source='library' / insert / commit`). Apply with `scripts/db.sh -f <(npx tsx scripts/seed-content.ts)`.
-- **Runtime**: `src/app/student/practice/page.tsx` calls `src/lib/content.ts` (`getPhonicsContent`, `getSpellingContent`, `getReadAloudPassage`) which query the `content` table directly. Falls back to fixture defaults if DB returns nothing.
+- **Runtime**: `src/app/student/practice/page.tsx` calls `src/lib/content.ts` (`getPhonicsContent`, `getSpellingContent`, `getReadAloudPassage`, `getWordMatchContent`, `getClozeContent`) which query the `content` table directly. Falls back to fixture defaults if DB returns nothing.
+- **Content types**: `wordlist`, `passage`, `word_match_set` (Sound Hunt), `cloze_sentence` (Missing Word). CHECK constraint in `supabase/schema-v2.sql` + `supabase/migration-2026-07-06-mini-activities.sql`.
 - **Rotation**: `rotation = count(completed sessions for student) % matching.length`. Computed server-side.
+- **Format pools**: which *game* fills each focus-area slot is also rotation-driven — `pickFormat(area, rotation)` in `src/lib/formats.ts` (phonics: blending/sound_hunt/missing_word; spelling: typing/word_builder/missing_word; spelling offset by 1 so two slots never both land on missing_word). Dev-only preview override: `/student/practice?rot=N`. Attempts record the game in `activity_attempts.format`; `activity_type` stays slot-valued so teacher queries are unchanged.
 - **Generate new content**: invoke `/wordpets-content <type> <difficulty> <pattern>` — produces TS snippet + SQL grounded in Ilana's pedagogical principles. See `~/.claude/skills/wordpets-content/SKILL.md`.
 
 ## Teaching Resources KB (`kb/`)
