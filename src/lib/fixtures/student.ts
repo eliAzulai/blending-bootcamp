@@ -485,3 +485,292 @@ export function pickReadAloudPassage(
   if (matching.length === 0) return fixtureReadAloudPassages[0];
   return matching[rotation % matching.length];
 }
+
+// ===========================================================================
+// Sound Hunt (word_match_set) — tap the word you hear / that starts with a sound
+// ===========================================================================
+
+export interface WordMatchRound {
+  target: string;
+  /** Required when the set's promptKind is "starts_with". */
+  sound?: string;
+  distractors: string[];
+}
+
+export interface WordMatchContent {
+  id: string;
+  title: string;
+  difficulty: DifficultyLevel;
+  promptKind: "hear_word" | "starts_with";
+  rounds: WordMatchRound[];
+}
+
+/**
+ * Distractor rule (applies to cloze sets below too): a distractor must be
+ * clearly wrong — same word family or same initial sound is good, but never
+ * a defensible alternative answer.
+ */
+export const fixtureWordMatchContent: WordMatchContent[] = [
+  // BEGINNER
+  {
+    id: "wordmatch-beg-short-a",
+    title: "Listen and Find: Short A",
+    difficulty: "beginner",
+    promptKind: "hear_word",
+    rounds: [
+      { target: "cat", distractors: ["bat", "hat"] },
+      { target: "man", distractors: ["map", "mat"] },
+      { target: "pan", distractors: ["pat", "pad"] },
+      { target: "bag", distractors: ["bat", "bad"] },
+      { target: "ham", distractors: ["hat", "had"] },
+    ],
+  },
+  {
+    id: "wordmatch-beg-first-sounds",
+    title: "First Sounds",
+    difficulty: "beginner",
+    promptKind: "starts_with",
+    rounds: [
+      { target: "sun", sound: "s", distractors: ["fun", "run"] },
+      { target: "dog", sound: "d", distractors: ["log", "fog"] },
+      { target: "pig", sound: "p", distractors: ["dig", "big"] },
+      { target: "hen", sound: "h", distractors: ["ten", "pen"] },
+      { target: "mop", sound: "m", distractors: ["top", "hop"] },
+    ],
+  },
+  {
+    id: "wordmatch-beg-short-i-o",
+    title: "Listen and Find: Short I and O",
+    difficulty: "beginner",
+    promptKind: "hear_word",
+    rounds: [
+      { target: "pig", distractors: ["pin", "pit"] },
+      { target: "sit", distractors: ["sip", "six"] },
+      { target: "dog", distractors: ["dot", "dig"] },
+      { target: "top", distractors: ["tip", "tap"] },
+      { target: "win", distractors: ["wig", "fin"] },
+    ],
+  },
+  // INTERMEDIATE
+  {
+    id: "wordmatch-int-digraphs",
+    title: "Digraph Hunt",
+    difficulty: "intermediate",
+    promptKind: "starts_with",
+    rounds: [
+      { target: "ship", sound: "sh", distractors: ["chip", "slip"] },
+      { target: "chat", sound: "ch", distractors: ["cat", "hat"] },
+      { target: "thin", sound: "th", distractors: ["shin", "tin"] },
+      { target: "shop", sound: "sh", distractors: ["chop", "stop"] },
+      { target: "chest", sound: "ch", distractors: ["test", "rest"] },
+    ],
+  },
+  {
+    id: "wordmatch-int-blends",
+    title: "Listen and Find: Blends",
+    difficulty: "intermediate",
+    promptKind: "hear_word",
+    rounds: [
+      { target: "frog", distractors: ["from", "fog"] },
+      { target: "stop", distractors: ["step", "spot"] },
+      { target: "clap", distractors: ["clip", "cap"] },
+      { target: "swim", distractors: ["slim", "skim"] },
+      { target: "hand", distractors: ["band", "sand"] },
+    ],
+  },
+  {
+    id: "wordmatch-int-end-sounds",
+    title: "Listen and Find: End Sounds",
+    difficulty: "intermediate",
+    promptKind: "hear_word",
+    rounds: [
+      { target: "fast", distractors: ["fist", "last"] },
+      { target: "milk", distractors: ["silk", "mill"] },
+      { target: "jump", distractors: ["bump", "just"] },
+      { target: "sing", distractors: ["ring", "sink"] },
+      { target: "lamp", distractors: ["camp", "land"] },
+    ],
+  },
+  // ADVANCED
+  {
+    id: "wordmatch-adv-magic-e",
+    title: "Magic E Words",
+    difficulty: "advanced",
+    promptKind: "hear_word",
+    rounds: [
+      { target: "cake", distractors: ["lake", "came"] },
+      { target: "bike", distractors: ["bake", "like"] },
+      { target: "note", distractors: ["nose", "vote"] },
+      { target: "cube", distractors: ["cute", "tube"] },
+      { target: "plane", distractors: ["plan", "place"] },
+    ],
+  },
+  {
+    id: "wordmatch-adv-long-short",
+    title: "Long or Short?",
+    difficulty: "advanced",
+    promptKind: "hear_word",
+    rounds: [
+      { target: "hope", distractors: ["hop", "rope"] },
+      { target: "kite", distractors: ["kit", "bite"] },
+      { target: "tape", distractors: ["tap", "cape"] },
+      { target: "pine", distractors: ["pin", "nine"] },
+      { target: "ride", distractors: ["rid", "hide"] },
+    ],
+  },
+  {
+    id: "wordmatch-adv-tricky-starts",
+    title: "First Sounds: Tricky",
+    difficulty: "advanced",
+    promptKind: "starts_with",
+    rounds: [
+      { target: "shine", sound: "sh", distractors: ["chime", "spine"] },
+      { target: "chase", sound: "ch", distractors: ["case", "base"] },
+      { target: "white", sound: "wh", distractors: ["bite", "kite"] },
+      { target: "brave", sound: "br", distractors: ["gave", "crave"] },
+      { target: "smile", sound: "sm", distractors: ["mile", "slide"] },
+    ],
+  },
+];
+
+export function getDefaultWordMatchContent(): WordMatchContent {
+  return fixtureWordMatchContent[0];
+}
+
+// ===========================================================================
+// Missing Word (cloze_sentence) — drag the word into the gap
+// ===========================================================================
+
+export interface ClozeSentence {
+  /** Contains exactly one "___" gap. */
+  text: string;
+  answer: string;
+  distractors: string[];
+}
+
+export interface ClozeContent {
+  id: string;
+  title: string;
+  difficulty: DifficultyLevel;
+  /** Which slot this set leans toward. Wave 1 pickers ignore it (one pool). */
+  intendedFor: "phonics" | "spelling";
+  sentences: ClozeSentence[];
+}
+
+export const fixtureClozeContent: ClozeContent[] = [
+  // BEGINNER
+  {
+    id: "cloze-beg-at-the-mat",
+    title: "Finish It: At the Mat",
+    difficulty: "beginner",
+    intendedFor: "phonics",
+    sentences: [
+      { text: "The cat sat on the ___.", answer: "mat", distractors: ["map", "man"] },
+      { text: "A pig can ___ in mud.", answer: "dig", distractors: ["dip", "big"] },
+      { text: "The sun is ___.", answer: "hot", distractors: ["hop", "hat"] },
+      { text: "The man got in his ___.", answer: "van", distractors: ["vat", "vet"] },
+    ],
+  },
+  {
+    id: "cloze-beg-pets",
+    title: "Finish It: Pets",
+    difficulty: "beginner",
+    intendedFor: "phonics",
+    sentences: [
+      { text: "The dog sat in the ___.", answer: "sun", distractors: ["sub", "sad"] },
+      { text: "My cat naps on the ___.", answer: "bed", distractors: ["bud", "bad"] },
+      { text: "The hen is in a ___.", answer: "pen", distractors: ["pin", "peg"] },
+      { text: "A pup can run and ___.", answer: "hop", distractors: ["hip", "hot"] },
+    ],
+  },
+  {
+    id: "cloze-beg-my-day",
+    title: "Finish It: My Day",
+    difficulty: "beginner",
+    intendedFor: "spelling",
+    sentences: [
+      { text: "I sit on the ___.", answer: "rug", distractors: ["run", "rat"] },
+      { text: "We had ham and ___.", answer: "jam", distractors: ["jab", "jog"] },
+      { text: "The bug is in the ___.", answer: "mud", distractors: ["mad", "map"] },
+      { text: "I can nap on the ___.", answer: "cot", distractors: ["cut", "can"] },
+    ],
+  },
+  // INTERMEDIATE
+  {
+    id: "cloze-int-at-the-shop",
+    title: "Finish It: At the Shop",
+    difficulty: "intermediate",
+    intendedFor: "phonics",
+    sentences: [
+      { text: "We went to the ___ to get fish.", answer: "shop", distractors: ["shut", "chip"] },
+      { text: "The crab hid under a ___.", answer: "shell", distractors: ["smell", "spell"] },
+      { text: "I can ring the ___.", answer: "bell", distractors: ["belt", "bent"] },
+      { text: "The frog sat on a ___.", answer: "log", distractors: ["fog", "leg"] },
+    ],
+  },
+  {
+    id: "cloze-int-play-time",
+    title: "Finish It: Play Time",
+    difficulty: "intermediate",
+    intendedFor: "phonics",
+    sentences: [
+      { text: "We ___ our hands to the song.", answer: "clap", distractors: ["clip", "crab"] },
+      { text: "The kids can ___ in the pool.", answer: "swim", distractors: ["slim", "swam"] },
+      { text: "Do not ___ on the wet step.", answer: "slip", distractors: ["slap", "ship"] },
+      { text: "The wind made the flag ___.", answer: "flap", distractors: ["clap", "frog"] },
+    ],
+  },
+  {
+    id: "cloze-int-lunch",
+    title: "Finish It: Lunch",
+    difficulty: "intermediate",
+    intendedFor: "spelling",
+    sentences: [
+      { text: "Please ___ the door.", answer: "shut", distractors: ["shot", "shop"] },
+      { text: "The truck went up the ___.", answer: "hill", distractors: ["hit", "hip"] },
+      { text: "We sang a ___ in class.", answer: "song", distractors: ["sang", "sing"] },
+      { text: "I had chips and ___ for lunch.", answer: "fish", distractors: ["fist", "wish"] },
+    ],
+  },
+  // ADVANCED
+  {
+    id: "cloze-adv-bake-sale",
+    title: "Finish It: Bake Sale",
+    difficulty: "advanced",
+    intendedFor: "spelling",
+    sentences: [
+      { text: "We will ___ a cake for the sale.", answer: "bake", distractors: ["bike", "back"] },
+      { text: "Jane gave me a ___ of cake.", answer: "slice", distractors: ["slide", "spice"] },
+      { text: "The cake is on the ___.", answer: "plate", distractors: ["place", "plum"] },
+      { text: "I hope the cake will ___ nice.", answer: "taste", distractors: ["tame", "toast"] },
+    ],
+  },
+  {
+    id: "cloze-adv-outside",
+    title: "Finish It: Outside",
+    difficulty: "advanced",
+    intendedFor: "phonics",
+    sentences: [
+      { text: "The ___ flew high in the sky.", answer: "kite", distractors: ["kit", "bite"] },
+      { text: "We rode our bikes down the ___.", answer: "lane", distractors: ["cane", "lime"] },
+      { text: "The snake hid in a deep ___.", answer: "hole", distractors: ["hold", "pole"] },
+      { text: "We could see the moon ___.", answer: "shine", distractors: ["shone", "spine"] },
+    ],
+  },
+  {
+    id: "cloze-adv-story-time",
+    title: "Finish It: Story Time",
+    difficulty: "advanced",
+    intendedFor: "phonics",
+    sentences: [
+      { text: "The brave mouse ran to its ___.", answer: "home", distractors: ["dome", "hose"] },
+      { text: "Dave made a ___ with his blocks.", answer: "cube", distractors: ["cub", "cape"] },
+      { text: "The whale made a big ___.", answer: "splash", distractors: ["flash", "brush"] },
+      { text: "Kate can ___ very fast.", answer: "skate", distractors: ["state", "slate"] },
+    ],
+  },
+];
+
+export function getDefaultClozeContent(): ClozeContent {
+  return fixtureClozeContent[0];
+}

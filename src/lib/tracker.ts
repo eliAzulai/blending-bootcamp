@@ -4,6 +4,8 @@ import type { FocusAreaType } from "@/types/database";
 
 export interface AttemptRecord {
   activityType: FocusAreaType;
+  /** Which game produced this attempt; null/omitted = legacy formats. */
+  format?: string | null;
   contentRef: string | null;
   score: number | null;
   durationSeconds: number;
@@ -128,6 +130,7 @@ class SupabaseTracker implements SessionTracker {
         body: JSON.stringify({
           session_id: sessionId,
           activity_type: attempt.activityType,
+          format: attempt.format ?? null,
           content_ref: attempt.contentRef,
           score: attempt.score,
           duration_seconds: attempt.durationSeconds,
