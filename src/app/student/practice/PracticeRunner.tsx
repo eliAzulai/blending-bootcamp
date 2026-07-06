@@ -6,31 +6,21 @@ import { createSessionTracker } from "@/lib/tracker";
 import PhonicsActivity from "@/components/activities/PhonicsActivity";
 import SpellingActivity from "@/components/activities/SpellingActivity";
 import ReadAloudActivity from "@/components/activities/ReadAloudActivity";
+import SoundHuntActivity from "@/components/activities/SoundHuntActivity";
+import WordBuilderActivity from "@/components/activities/WordBuilderActivity";
+import MissingWordActivity from "@/components/activities/MissingWordActivity";
 import PetDisplay from "@/components/PetDisplay";
-import type {
-  PhonicsContent,
-  SpellingContent,
-  ReadAloudPassage,
-} from "@/lib/fixtures/student";
-import type { Student, FocusAreaType } from "@/types/database";
+import type { PracticeSlot } from "@/lib/formats";
+import type { Student } from "@/types/database";
 
 interface PracticeRunnerProps {
   student: Student;
-  activities: FocusAreaType[];
-  phonicsContent: PhonicsContent;
-  spellingContent: SpellingContent;
-  readAloudPassage: ReadAloudPassage;
+  slots: PracticeSlot[];
 }
 
 type PageState = "activity" | "complete";
 
-export default function PracticeRunner({
-  student,
-  activities,
-  phonicsContent,
-  spellingContent,
-  readAloudPassage,
-}: PracticeRunnerProps) {
+export default function PracticeRunner({ student, slots }: PracticeRunnerProps) {
   const router = useRouter();
 
   const [activityIndex, setActivityIndex] = useState(0);
@@ -49,7 +39,7 @@ export default function PracticeRunner({
       setTotalDuration((prev) => prev + duration);
 
       const nextIndex = activityIndex + 1;
-      if (nextIndex >= activities.length) {
+      if (nextIndex >= slots.length) {
         const finalCoins = totalCoins + coins;
         const finalDuration = totalDuration + duration;
         await tracker.finish({
@@ -61,7 +51,7 @@ export default function PracticeRunner({
         setActivityIndex(nextIndex);
       }
     },
-    [activityIndex, activities.length, totalCoins, totalDuration, tracker],
+    [activityIndex, slots.length, totalCoins, totalDuration, tracker],
   );
 
   if (pageState === "complete") {
@@ -102,8 +92,8 @@ export default function PracticeRunner({
     );
   }
 
-  const currentActivity = activities[activityIndex];
-  const progressPct = Math.round((activityIndex / activities.length) * 100);
+  const slot = slots[activityIndex];
+  const progressPct = Math.round((activityIndex / slots.length) * 100);
 
   return (
     <div className="flex min-h-screen flex-col bg-amber-50">
@@ -124,32 +114,55 @@ export default function PracticeRunner({
           ← Home
         </button>
         <p className="text-sm font-bold text-gray-500">
-          {activityIndex + 1} / {activities.length}
+          {activityIndex + 1} / {slots.length}
         </p>
         <div className="text-sm font-bold text-amber-600">
           🪙 {totalCoins}
         </div>
       </div>
 
-      {/* Activity area */}
+      {/* Activity area — component chosen by the server-picked format */}
       <div className="flex-1">
-        {currentActivity === "phonics" && (
+        {slot.format === "blending" && (
           <PhonicsActivity
-            content={phonicsContent}
+            content={slot.content}
             tracker={tracker}
             onComplete={handleActivityComplete}
           />
         )}
-        {currentActivity === "spelling" && (
+        {slot.format === "sound_hunt" && (
+          <SoundHuntActivity
+            content={slot.content}
+            tracker={tracker}
+            onComplete={handleActivityComplete}
+          />
+        )}
+        {slot.format === "typing" && (
           <SpellingActivity
-            content={spellingContent}
+            content={slot.content}
             tracker={tracker}
             onComplete={handleActivityComplete}
           />
         )}
-        {currentActivity === "read_aloud" && (
+        {slot.format === "word_builder" && (
+          <WordBuilderActivity
+            content={slot.content}
+            difficulty={slot.content.difficulty}
+            tracker={tracker}
+            onComplete={handleActivityComplete}
+          />
+        )}
+        {slot.format === "missing_word" && (
+          <MissingWordActivity
+            content={slot.content}
+            area={slot.area}
+            tracker={tracker}
+            onComplete={handleActivityComplete}
+          />
+        )}
+        {slot.format === "read_aloud" && (
           <ReadAloudActivity
-            passage={readAloudPassage}
+            passage={slot.content}
             tracker={tracker}
             onComplete={handleActivityComplete}
           />
