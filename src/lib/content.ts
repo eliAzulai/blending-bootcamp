@@ -17,16 +17,22 @@ import {
   getDefaultPhonicsContent,
   getDefaultSpellingContent,
   getDefaultReadAloudPassage,
+  getDefaultWordMatchContent,
+  getDefaultClozeContent,
   type PhonicsContent,
   type PhonicsWord,
   type SpellingContent,
   type SpellingWord,
   type ReadAloudPassage,
+  type WordMatchContent,
+  type WordMatchRound,
+  type ClozeContent,
+  type ClozeSentence,
 } from "./fixtures/student";
 
 interface ContentRow {
   id: string;
-  type: "wordlist" | "passage";
+  type: "wordlist" | "passage" | "word_match_set" | "cloze_sentence";
   title: string;
   body: string;
   difficulty: DifficultyLevel;
@@ -34,6 +40,9 @@ interface ContentRow {
     legacy_id?: string;
     intended_for?: "phonics" | "spelling";
     words?: Array<{ word: string; phonemes?: string[]; audioHint?: string }>;
+    prompt_kind?: string;
+    rounds?: unknown;
+    sentences?: unknown;
     [k: string]: unknown;
   };
 }
@@ -119,5 +128,61 @@ export async function getReadAloudPassage(
     title: row.title,
     difficulty: row.difficulty,
     text: row.body,
+  };
+}
+
+async function fetchByType(
+  supabase: SupabaseClient,
+  type: "word_match_set" | "cloze_sentence",
+  difficulty: DifficultyLevel,
+): Promise<ContentRow[]> {
+  const { data, error } = await supabase
+    .from("content")
+    .select("id, type, title, body, difficulty, metadata")
+    .eq("type", type)
+    .eq("difficulty", difficulty)
+    .order("created_at");
+  if (error) {
+    console.warn(`[content] fetch ${type} failed`, error);
+    return [];
+  }
+  return (data ?? []) as ContentRow[];
+}
+
+export async function getWordMatchContent(
+  supabase: SupabaseClient,
+  difficulty: DifficultyLevel,
+  rotation: number,
+): Promise<WordMatchContent> {
+  const rows = await fetchByType(supabase, "word_match_set", difficulty);
+  if (rows.length === 0) return getDefaultWordMatchContent();
+  const row = rows[rotation % rows.length];
+  return {
+    id: (row.metadata.legacy_id as string) ?? row.id,
+    title: row.title,
+    difficulty: row.difficulty,
+    promptKind:
+      (row.metadata.prompt_kind as WordMatchContent["promptKind"]) ?? "hear_word",
+    rounds: (row.metadata.rounds ?? []) as WordMatchRound[],
+  };
+}
+
+// Wave 1 deliberately ignores metadata.intended_for: all cloze sets form one
+// pool regardless of which slot (phonics/spelling) the format fills.
+export async function getClozeContent(
+  supabase: SupabaseClient,
+  difficulty: DifficultyLevel,
+  rotation: number,
+): Promise<ClozeContent> {
+  const rows = await fetchByType(supabase, "cloze_sentence", difficulty);
+  if (rows.length === 0) return getDefaultClozeContent();
+  const row = rows[rotation % rows.length];
+  return {
+    id: (row.metadata.legacy_id as string) ?? row.id,
+    title: row.title,
+    difficulty: row.difficulty,
+    intendedFor:
+      (row.metadata.intended_for as ClozeContent["intendedFor"]) ?? "phonics",
+    sentences: (row.metadata.sentences ?? []) as ClozeSentence[],
   };
 }
