@@ -166,6 +166,9 @@ create table if not exists activity_attempts (
   id uuid primary key default gen_random_uuid(),
   session_id uuid references practice_sessions(id) on delete cascade not null,
   activity_type text not null check (activity_type in ('phonics', 'spelling', 'read_aloud')),
+  -- Which game produced the attempt (sound_hunt/word_builder/missing_word);
+  -- null = legacy blending/typing/read-aloud. activity_type stays slot-valued.
+  format text,
   content_ref text,
   score integer check (score is null or (score >= 0 and score <= 100)),
   duration_seconds integer not null default 0,
@@ -190,7 +193,7 @@ create policy "Parents manage own child attempts" on activity_attempts for all
 -- CONTENT (seeded starter library, plus teacher-uploaded in future)
 create table if not exists content (
   id uuid primary key default gen_random_uuid(),
-  type text not null check (type in ('wordlist', 'passage')),
+  type text not null check (type in ('wordlist', 'passage', 'word_match_set', 'cloze_sentence')),
   title text not null,
   body text not null,
   age_min integer not null default 6,
