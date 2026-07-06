@@ -18,10 +18,12 @@ import {
   fixturePhonicsContent,
   fixtureSpellingContent,
   fixtureReadAloudPassages,
+  fixtureWordMatchContent,
+  fixtureClozeContent,
 } from "../src/lib/fixtures/student";
 
 interface Row {
-  type: "wordlist" | "passage";
+  type: "wordlist" | "passage" | "word_match_set" | "cloze_sentence";
   title: string;
   body: string;
   difficulty: "beginner" | "intermediate" | "advanced";
@@ -66,6 +68,35 @@ for (const passage of fixtureReadAloudPassages) {
     difficulty: passage.difficulty,
     metadata: {
       legacy_id: passage.id,
+    },
+  });
+}
+
+for (const set of fixtureWordMatchContent) {
+  rows.push({
+    type: "word_match_set",
+    title: set.title,
+    body: set.rounds.map((r) => r.target).join(" "),
+    difficulty: set.difficulty,
+    metadata: {
+      legacy_id: set.id,
+      intended_for: "phonics",
+      prompt_kind: set.promptKind,
+      rounds: set.rounds,
+    },
+  });
+}
+
+for (const set of fixtureClozeContent) {
+  rows.push({
+    type: "cloze_sentence",
+    title: set.title,
+    body: set.sentences.map((s) => s.text.replace("___", s.answer)).join(" "),
+    difficulty: set.difficulty,
+    metadata: {
+      legacy_id: set.id,
+      intended_for: set.intendedFor,
+      sentences: set.sentences,
     },
   });
 }
