@@ -61,7 +61,13 @@ export function useTileDrag({ onDrop, onPickup }: UseTileDragOptions) {
       const active = drag?.tileId === tileId;
       return {
         onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+          } catch {
+            // Pointer may already be released (fast tap) — drag still works
+            // for the common case; a missed capture only loses move events
+            // outside the element.
+          }
           originRef.current = { x: e.clientX, y: e.clientY };
           update({ tileId, dx: 0, dy: 0 });
           onPickup?.(tileId);
