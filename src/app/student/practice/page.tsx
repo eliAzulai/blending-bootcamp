@@ -5,14 +5,21 @@ import {
   getPhonicsContent,
   getSpellingContent,
   getReadAloudPassage,
+  getWordMatchContent,
+  getClozeContent,
 } from "@/lib/content";
+import { pickFormat, type PracticeSlot } from "@/lib/formats";
 import type {
   Student,
   FocusAreaType,
   DifficultyLevel,
 } from "@/types/database";
 
-export default async function PracticePage() {
+export default async function PracticePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ rot?: string }>;
+}) {
   const supabase = await createClient();
 
   const {
@@ -47,35 +54,68 @@ export default async function PracticePage() {
     ? order.filter((a) => focusMap.has(a))
     : order;
 
-  // Count completed sessions for content rotation. New students see set 0,
-  // after their first completed session they see set 1, etc.
+  // Count completed sessions for rotation. New students see set 0, after
+  // their first completed session they see set 1, etc. Rotation also picks
+  // which FORMAT fills each slot (see src/lib/formats.ts).
   const { count: completedCount } = await supabase
     .from("practice_sessions")
     .select("id", { count: "exact", head: true })
     .eq("student_id", student.id)
     .eq("completed", true);
 
-  const rotation = completedCount ?? 0;
+  // Dev-only override so all formats can be previewed without completing
+  // sessions: /student/practice?rot=1
+  const sp = await searchParams;
+  const rotOverride = Number(sp?.rot);
+  const rotation =
+    process.env.NODE_ENV !== "production" && Number.isFinite(rotOverride)
+      ? rotOverride
+      : (completedCount ?? 0);
 
-  // Pre-pick the content for each activity on the server so the runner
-  // doesn't need to call any fixture-lookup logic.
-  const phonicsDifficulty = focusMap.get("phonics") ?? "beginner";
-  const spellingDifficulty = focusMap.get("spelling") ?? "beginner";
-  const readAloudDifficulty = focusMap.get("read_aloud") ?? "beginner";
+  // Pre-pick format + content for each slot on the server so the runner
+  // just renders what it's given.
+  const slots: PracticeSlot[] = [];
+  for (const area of activities) {
+    const difficulty = focusMap.get(area) ?? "beginner";
+    const format = pickFormat(area, rotation);
+    if (format === "blending") {
+      slots.push({
+        area: "phonics",
+        format,
+        content: await getPhonicsContent(supabase, difficulty, rotation),
+      });
+    } else if (format === "sound_hunt") {
+      slots.push({
+        area: "phonics",
+        format,
+        content: await getWordMatchContent(supabase, difficulty, rotation),
+      });
+    } else if (format === "typing") {
+      slots.push({
+        area: "spelling",
+        format,
+        content: await getSpellingContent(supabase, difficulty, rotation),
+      });
+    } else if (format === "word_builder") {
+      slots.push({
+        area: "spelling",
+        format,
+        content: await getSpellingContent(supabase, difficulty, rotation),
+      });
+    } else if (format === "missing_word") {
+      slots.push({
+        area: area as "phonics" | "spelling",
+        format,
+        content: await getClozeContent(supabase, difficulty, rotation),
+      });
+    } else {
+      slots.push({
+        area: "read_aloud",
+        format: "read_aloud",
+        content: await getReadAloudPassage(supabase, difficulty, rotation),
+      });
+    }
+  }
 
-  const [phonicsContent, spellingContent, readAloudPassage] = await Promise.all([
-    getPhonicsContent(supabase, phonicsDifficulty, rotation),
-    getSpellingContent(supabase, spellingDifficulty, rotation),
-    getReadAloudPassage(supabase, readAloudDifficulty, rotation),
-  ]);
-
-  return (
-    <PracticeRunner
-      student={student}
-      activities={activities}
-      phonicsContent={phonicsContent}
-      spellingContent={spellingContent}
-      readAloudPassage={readAloudPassage}
-    />
-  );
+  return <PracticeRunner student={student} slots={slots} />;
 }
