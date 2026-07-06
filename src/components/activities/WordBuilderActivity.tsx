@@ -58,8 +58,8 @@ export default function WordBuilderActivity({
   const [shakeSlots, setShakeSlots] = useState<number[]>([]);
   const [wrongChecks, setWrongChecks] = useState(0);
   const [done, setDone] = useState(false);
-  const startedAtRef = useRef(Date.now());
-  const wordStartRef = useRef(Date.now());
+  const startedAtRef = useRef<number>(0);
+  const wordStartRef = useRef<number>(0);
 
   useEffect(() => {
     setPlaced(Array(word.length).fill(null));
@@ -67,7 +67,9 @@ export default function WordBuilderActivity({
     setShakeSlots([]);
     setWrongChecks(0);
     setDone(false);
-    wordStartRef.current = Date.now();
+    const now = Date.now();
+    if (startedAtRef.current === 0) startedAtRef.current = now;
+    wordStartRef.current = now;
     void speakWord(currentWord.audioHint ?? currentWord.word);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordIndex]);

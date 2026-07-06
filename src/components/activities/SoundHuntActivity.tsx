@@ -29,8 +29,8 @@ export default function SoundHuntActivity({
   const [wrongTries, setWrongTries] = useState(0);
   const [shakeWord, setShakeWord] = useState<string | null>(null);
   const [solved, setSolved] = useState(false);
-  const startedAtRef = useRef(Date.now());
-  const roundStartRef = useRef(Date.now());
+  const startedAtRef = useRef<number>(0);
+  const roundStartRef = useRef<number>(0);
 
   const round = content.rounds[roundIndex];
   const choices = useMemo(
@@ -50,9 +50,9 @@ export default function SoundHuntActivity({
   }, [content.promptKind, round]);
 
   useEffect(() => {
-    roundStartRef.current = Date.now();
-    setWrongTries(0);
-    setSolved(false);
+    const now = Date.now();
+    if (startedAtRef.current === 0) startedAtRef.current = now;
+    roundStartRef.current = now;
     void sayPrompt();
   }, [roundIndex, sayPrompt]);
 
@@ -83,6 +83,8 @@ export default function SoundHuntActivity({
               ),
             });
           } else {
+            setWrongTries(0);
+            setSolved(false);
             setRoundIndex(next);
           }
         }, 1100);

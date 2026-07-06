@@ -28,8 +28,8 @@ export default function MissingWordActivity({
   const [wrongTries, setWrongTries] = useState(0);
   const [shakeTile, setShakeTile] = useState<string | null>(null);
   const [solved, setSolved] = useState(false);
-  const startedAtRef = useRef(Date.now());
-  const sentenceStartRef = useRef(Date.now());
+  const startedAtRef = useRef<number>(0);
+  const sentenceStartRef = useRef<number>(0);
 
   const sentence = content.sentences[sentenceIndex];
   const [before, after] = useMemo(
@@ -42,9 +42,9 @@ export default function MissingWordActivity({
   );
 
   useEffect(() => {
-    sentenceStartRef.current = Date.now();
-    setWrongTries(0);
-    setSolved(false);
+    const now = Date.now();
+    if (startedAtRef.current === 0) startedAtRef.current = now;
+    sentenceStartRef.current = now;
   }, [sentenceIndex]);
 
   const tryWord = useCallback(
@@ -75,6 +75,8 @@ export default function MissingWordActivity({
               ),
             });
           } else {
+            setWrongTries(0);
+            setSolved(false);
             setSentenceIndex(next);
           }
         }, 2400);
