@@ -3,6 +3,12 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSessionTracker } from "@/lib/tracker";
+import { speakWord } from "@/lib/speech";
+import {
+  HEAR_WORD_LABEL,
+  PET_LEARNED_WORD_LINE,
+  fillPetName,
+} from "@/lib/child-copy";
 import PhonicsActivity from "@/components/activities/PhonicsActivity";
 import SpellingActivity from "@/components/activities/SpellingActivity";
 import ReadAloudActivity from "@/components/activities/ReadAloudActivity";
@@ -64,6 +70,15 @@ export default function PracticeRunner({
     [activityIndex, activities.length, totalCoins, totalDuration, tracker],
   );
 
+  // "The words are the food" (reward-system spec, research §0): the pet
+  // visibly learns one of the words the child just practiced. Deterministic:
+  // first word of the first word-based activity in today's session.
+  const learnedWord = activities.includes("phonics")
+    ? (phonicsContent.words[0]?.word ?? null)
+    : activities.includes("spelling")
+      ? (spellingContent.words[0]?.word ?? null)
+      : null;
+
   if (pageState === "complete") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-amber-50 px-4 py-10 gap-6">
@@ -91,6 +106,23 @@ export default function PracticeRunner({
         <p className="text-center text-base text-gray-600">
           {student.pet_name} loved that!
         </p>
+
+        {learnedWord && (
+          <div className="flex flex-col items-center gap-2 rounded-3xl bg-white px-8 py-5 shadow-sm">
+            <p className="text-base font-semibold text-purple-700">
+              {fillPetName(PET_LEARNED_WORD_LINE, student.pet_name)}
+            </p>
+            <p className="text-3xl font-extrabold tracking-wide text-gray-800">
+              {learnedWord}
+            </p>
+            <button
+              onClick={() => speakWord(learnedWord)}
+              className="min-h-12 rounded-2xl bg-purple-100 px-5 py-2 text-base font-bold text-purple-700 hover:bg-purple-200 active:scale-95 transition-transform"
+            >
+              🔊 {fillPetName(HEAR_WORD_LABEL, student.pet_name)}
+            </button>
+          </div>
+        )}
 
         <button
           onClick={() => router.push("/student")}

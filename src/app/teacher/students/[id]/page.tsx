@@ -9,7 +9,7 @@ import {
   type Student,
   type FocusArea,
   type Tag,
-  type FocusAreaType,
+  type AttemptType,
 } from "@/types/database";
 
 export default async function StudentDetailPage({
@@ -73,7 +73,7 @@ export default async function StudentDetailPage({
   type AttemptRow = {
     id: string;
     session_id: string;
-    activity_type: FocusAreaType;
+    activity_type: AttemptType;
     content_ref: string | null;
     score: number | null;
     duration_seconds: number;

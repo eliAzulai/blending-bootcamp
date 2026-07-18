@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — production build (validates all routes)
 - `npm run lint` — ESLint
 - `npm run pull-secrets` — pull env vars from Infisical into `.env.local`
-- No JS/TS test framework yet
+- `npm test` — vitest (suites in `src/engine/`, `src/lib/`, `src/app/api/`); `npm run test:watch` for watch mode
 - `kb/.venv/bin/pytest kb/tests/ -q` — Python tests for the teaching-resources KB (21 tests). Works from repo root or `kb/` (`kb/pyproject.toml` puts the repo root on `pythonpath`, so no `PYTHONPATH=.` needed).
 
 ## What This Is

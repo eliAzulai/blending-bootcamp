@@ -1,4 +1,4 @@
-import { FOCUS_AREA_LABELS, type FocusAreaType } from "@/types/database";
+import { ATTEMPT_LABELS, type AttemptType } from "@/types/database";
 
 interface SessionRow {
   id: string;
@@ -11,7 +11,7 @@ interface SessionRow {
 interface AttemptRow {
   id: string;
   session_id: string;
-  activity_type: FocusAreaType;
+  activity_type: AttemptType;
   content_ref: string | null;
   score: number | null;
   duration_seconds: number;
@@ -24,10 +24,13 @@ interface PracticeHistoryProps {
   attempts: AttemptRow[];
 }
 
-const ACTIVITY_EMOJI: Record<FocusAreaType, string> = {
+// letter_hunt renders as its own labelled chip — recognition play must stay
+// visually distinct from the three assigned focus areas (2026-07-13 spec).
+const ACTIVITY_EMOJI: Record<AttemptType, string> = {
   phonics: "🔤",
   spelling: "✏️",
   read_aloud: "📖",
+  letter_hunt: "🕵️",
 };
 
 /**
@@ -145,7 +148,7 @@ export default function PracticeHistory({
                         className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] text-purple-700"
                       >
                         <span>{ACTIVITY_EMOJI[a.activity_type]}</span>
-                        {FOCUS_AREA_LABELS[a.activity_type]}
+                        {ATTEMPT_LABELS[a.activity_type]}
                         {a.score !== null && ` · ${a.score}%`}
                       </span>
                     ))}

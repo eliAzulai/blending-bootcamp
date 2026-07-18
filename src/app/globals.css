@@ -93,10 +93,27 @@ body {
   animation: pet-bounce-once 0.6s cubic-bezier(.34, 1.56, .64, 1) 1;
 }
 
+/* Care overlay — transient emoji (food/ball/hearts) during a user-triggered
+ * care reaction on /student home. One-shot <=1s, forwards so it fades out and
+ * stays gone (R26 amendment: user-triggered one-shot feedback). */
+@keyframes care-overlay-pop {
+  0% { opacity: 0; transform: translateY(6px) scale(0.7); }
+  25% { opacity: 1; transform: translateY(0) scale(1.1); }
+  70% { opacity: 1; transform: translateY(-8px) scale(1); }
+  100% { opacity: 0; transform: translateY(-16px) scale(0.9); }
+}
+.care-overlay {
+  animation: care-overlay-pop 0.9s ease-out 1 forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pet-breathe,
   .pet-bounce-once {
     animation: none;
+  }
+  .care-overlay {
+    animation: none;
+    opacity: 0;
   }
 }
 
