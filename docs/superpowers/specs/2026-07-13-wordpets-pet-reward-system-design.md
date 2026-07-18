@@ -147,6 +147,16 @@ Browser verification via dev-only harness `/dev/pet` (404s in production) exerci
 
 ---
 
+## Decisions locked in the 2026-07-18 grilling session
+
+1. **Target user:** this build serves Phase 1a's ages 6-8 as-is. The paid grades 3-6 cohort does NOT get this experience unchanged — it requires an older-kid shell first (visible mastery numbers, harder Letter Hunt tiers, story framing per research §4). Separate slice, not a retrofit.
+2. **Rollout:** merged to `main` immediately (deploy is restore-gated anyway); restore-day steps consolidated in `RESTORE.md` at the repo root.
+3. **Legacy coin balances:** untouched. Never take a number away from a child; satiation already caps daily spend; Phase 1b's enrichment layer is the designed sink for large balances.
+4. **Care gating:** care verbs work every day, practice or not. Hard-blocking affection until practice is paid would be the toll-gate we banned in the other direction. Guardrails: mood never lifts without practice, nothing unlocks via care, coins only come from learning, satiation caps the drain.
+5. **Letter Hunt evidentiary weight:** formative until data says otherwise — when the engine goes live, mastery moves only on production activities. Revisit only if hint-usage + hunt scores prove predictive of production. Letter-set expansion (c/g/k/vowels) requires a per-letter curated ban-list first.
+6. **Metric instrumentation:** the Phase 1a success metric is now computed on `/teacher` (`MetricStrip`): % of students with 4+ distinct completed-practice days per rolling 7-day window, 4-window trend. Rush-through guardrail (manual query, run before/after Letter Hunt has usage): compare per-word `activity_attempts.score` averages for `spelling`/`phonics` in the weeks before vs. after `letter_hunt` rows first appear; if per-word scores drop while completion holds, the play gate is doing damage.
+7. **R26 amendment governance:** Ilana reviews the amendment text + `/dev/pet` harness async before any student sees the build; if she vetoes, care reactions fall back to a static emoji/label swap (supported without code restructuring). "Learned word" stays a first/win word, never a struggled word.
+
 ## Out of scope (unchanged deferrals)
 
 Pet room, outfits, inventory, evolution, multiple pets, leaderboards, streaks, coin dashboards, separate world routes, sound effects on care reactions (follow-up candidate), pet presence inside `PracticeRunner` (panel-flagged as the next highest-value slice per the 2026-05-12 "pet reacts during learning" directive — deliberately not smuggled into this change).
