@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — production build (validates all routes)
 - `npm run lint` — ESLint
 - `npm run pull-secrets` — pull env vars from Infisical into `.env.local`
-- No JS/TS test framework yet
+- `npm test` — vitest (engine + buddy-spike unit tests, colocated `*.test.ts`)
 - `kb/.venv/bin/pytest kb/tests/ -q` — Python tests for the teaching-resources KB (21 tests). Works from repo root or `kb/` (`kb/pyproject.toml` puts the repo root on `pythonpath`, so no `PYTHONPATH=.` needed).
 
 ## What This Is
@@ -41,6 +41,7 @@ The original **Phase 0 — Blending Bootcamp** (14-day standalone phonics progra
 - `/student`, `/student/practice` — child home + practice runner. Both server components; activities themselves are client components.
 - `/teacher`, `/teacher/add-student`, `/teacher/students/[id]` — teacher dashboard. All server components.
 - `/api/transcribe`, `/auth/callback` — supporting endpoints.
+- `/spike/buddy` — rung-1 voice-buddy ASR-validation spike (auth-gated, not linked from any child/teacher surface). Run protocol: `docs/spikes/2026-07-voice-buddy-rung1.md`.
 
 ### Components
 
@@ -83,7 +84,7 @@ Speech output (TTS) uses browser Web Speech API:
 
 **The one correct path**: `npm run pull-secrets` populates `.env.local` from Infisical project `2423b7fc` (legacy name: "blending-bootcamp" — kept under old name intentionally). Don't `export` vars or hand-edit `.env.local`; Infisical is the source of truth. Keys below document what's stored there.
 
-- `OPENAI_API_KEY` — server-side only, Whisper transcription (⚠️ as of 2026-04-23 the key in the `blending-bootcamp` Infisical project is out of credits; KB extraction was run against the `voice` project's key. Top up or rotate before relying on production Whisper.)
+- `OPENAI_API_KEY` — server-side only, Whisper transcription. As of 2026-07-04 this is the `shared` Infisical project's key copied into `blending-bootcamp` (the earlier project-specific key was removed while out of credits; if quota errors reappear, check the `shared` project's key first).
 - `NEXT_PUBLIC_SUPABASE_URL` — optional, enables cloud sync
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — optional; primary key used by server/middleware/tracker.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — optional backwards-compatible fallback for the browser client only.
@@ -153,7 +154,7 @@ Queryable knowledge base of Ilana's curated teaching materials. See `kb/README.m
 - Skills: `/curriculum-lookup` (what content), `/activity-ideas` (what activities), `/teaching-principles` (how/why to teach), `/wordpets-content` (generate new practice content grounded in Ilana's principles)
 - Setup: Python 3.10+, then `cd kb && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`. All `kb.scripts.*` modules must be invoked from the repo root with `PYTHONPATH=.`.
 - Vision extraction uses `gpt-4o-mini` with `detail: "low"` (fixed 85 tokens/image) plus a 0.5s proactive throttle and 65s TPM-aware retry floor in `kb/scripts/extract_vision.py` — if you change these, expect 200k TPM rate-limits on bulk runs.
-- Needs `OPENAI_API_KEY`. Infisical's `blending-bootcamp` project key is currently out of credits; see Env Vars section above.
+- Needs `OPENAI_API_KEY`; see Env Vars section above.
 
 ## Comics authoring (`comics/`)
 
