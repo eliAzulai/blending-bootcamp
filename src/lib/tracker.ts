@@ -1,9 +1,9 @@
 import { supabaseIsConfigured } from "@/lib/supabase/client";
 import { fixtureStudent } from "@/lib/fixtures/student";
-import type { FocusAreaType } from "@/types/database";
+import type { AttemptType } from "@/types/database";
 
 export interface AttemptRecord {
-  activityType: FocusAreaType;
+  activityType: AttemptType;
   contentRef: string | null;
   score: number | null;
   durationSeconds: number;
@@ -93,7 +93,16 @@ async function fetchWithTimeout(
 
 class SupabaseTracker implements SessionTracker {
   sessionId: string | null = null;
-  constructor(private studentId: string) {}
+  constructor(
+    private studentId: string,
+    existingSessionId?: string,
+  ) {
+    // When bound to an existing session (Letter Hunt play attaches to today's
+    // already-completed practice session), ensureSession() becomes a no-op —
+    // play must never open new practice_sessions rows, which would inflate
+    // the teacher's day counts and read as phantom incomplete sessions.
+    if (existingSessionId) this.sessionId = existingSessionId;
+  }
 
   private async ensureSession(): Promise<string | null> {
     if (this.sessionId) return this.sessionId;
@@ -198,4 +207,19 @@ export function createSessionTracker(studentId: string): SessionTracker {
   if (studentId === fixtureStudent.id) return new NoopTracker();
   if (!supabaseIsConfigured()) return new NoopTracker();
   return new SupabaseTracker(studentId);
+}
+
+/**
+ * Recorder bound to an EXISTING practice session — used by post-practice play
+ * (Letter Hunt) so attempts attach to the day's completed session instead of
+ * opening a new one. Callers fire-and-forget recordAttempt (never await in the
+ * interaction path) and must not call finish().
+ */
+export function createAttemptRecorder(
+  studentId: string,
+  sessionId: string | null,
+): SessionTracker {
+  if (studentId === fixtureStudent.id) return new NoopTracker();
+  if (!supabaseIsConfigured() || !sessionId) return new NoopTracker();
+  return new SupabaseTracker(studentId, sessionId);
 }

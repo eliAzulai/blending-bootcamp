@@ -160,7 +160,7 @@ Enforce via a `.passage` class in `globals.css` applied by the read-aloud compon
 
 **Rule.**
 
-- `/student` (home): at most **one calm idle animation** on the pet (breathe). No bouncing pet. No coin animation. No streak fire flicker.
+- `/student` (home): at most **one calm idle animation** on the pet (breathe). No ambient/idle bouncing pet. No coin animation. No streak fire flicker. **User-triggered one-shot feedback is permitted** (≤1s, e.g. `.pet-bounce-once` / `.care-overlay` on a care action or pet tap) provided it **replaces** the idle breathe while playing (never stacks), never auto-repeats, and is **debounced** so repeated taps cannot chain into continuous motion. *(Amended 2026-07-13, pet reward system. Justification: R26's mischief is ambient motion competing with decoding attention — the home surface has no decoding task, and the rule already blesses "triggered feedback" on practice surfaces where attention stakes are higher. The companion spec's Phase 1a pet section explicitly requires reaction animations — "eating, playing, celebrating" — as the "feels alive" investment.)*
 - `/student/practice/*` (any activity in progress): **no idle animation** anywhere. Triggered feedback only — pet bounces *after* a correct answer or session completion, never during a reading task.
 - Activity transitions: prefer instant swap. If a transition is added later, it must be ≤200ms and fade-only (no slide, no scale).
 - All animations pause under `prefers-reduced-motion: reduce` (already enforced for `.pet-breathe` and `.pet-bounce-once`).
@@ -197,7 +197,7 @@ Plain coin counts and "+N coins!" feedback are explicitly allowed. The boundary 
 | Transcript scope (R17) | Code review: any component receiving a `transcript` prop or rendering `attempt.transcript` from `/student/*` is a violation. |
 | Determinism (R24) | `src/lib/content.ts` picker functions take `(supabase, difficulty, rotation)` and return deterministic results. No `Math.random()` or per-render shuffles inside child render paths. |
 | Streak copy (R25) | Code review on `PetDisplay`, mood-string maps, and any `/student/*` copy. Ban regex: `missed\|broken\|lost\|haven't\|come back\|tomorrow`. |
-| Motion budget (R26) | Only `.pet-breathe` on `/student`. No idle animations on `/student/practice/*`. `prefers-reduced-motion` gates `.pet-breathe` and `.pet-bounce-once` in `globals.css`. |
+| Motion budget (R26) | `.pet-breathe` is the only idle on `/student`; `.pet-bounce-once` + `.care-overlay` allowed as debounced user-triggered one-shots (the `reacting` gate in `PetHome.tsx` is the debounce). No idle animations on `/student/practice/*`. `prefers-reduced-motion` gates all of them in `globals.css`. |
 | No game-economy framing (R27) | Code review on `/student/*`. Coins must be a plain count, not a chip pill / HUD / leaderboard / dashboard. |
 | Code review | Any PR touching `globals.css`, `layout.tsx`, fixtures, speech, or pet/streak copy that reintroduces forbidden patterns should be flagged. |
 | Future: ESLint rule | `no-restricted-syntax` for `font-family: system-ui` strings; ban `dark:` Tailwind classes inside `src/app/student/`; ban `transcript` references on `src/app/student/**`. |

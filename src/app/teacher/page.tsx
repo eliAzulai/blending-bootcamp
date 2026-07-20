@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import MetricStrip, { type WeekWindow } from "@/components/teacher/MetricStrip";
 import StatsBar from "@/components/teacher/StatsBar";
 import StudentCard from "@/components/teacher/StudentCard";
 import type { Student, Tag } from "@/types/database";
@@ -9,6 +10,8 @@ interface StudentRow extends Student {
   tags: Tag[];
   session_count: number;
   last_session_date: string | null;
+  /** Dates (YYYY-MM-DD) of completed sessions, for the success metric. */
+  completed_dates: string[];
 }
 
 export default async function TeacherDashboard() {
@@ -26,7 +29,7 @@ export default async function TeacherDashboard() {
       .select(`
         *,
         student_tags ( tag_id ),
-        practice_sessions ( date )
+        practice_sessions ( date, completed )
       `)
       .eq("teacher_id", user.id)
       .order("name"),
@@ -46,7 +49,9 @@ export default async function TeacherDashboard() {
     const tagIds = rawTags.map((st) => st.tag_id);
     const tags = tagIds.map((id) => tagsMap.get(id)).filter(Boolean) as Tag[];
 
-    const sessions = (s as { practice_sessions?: { date: string }[] }).practice_sessions ?? [];
+    const sessions =
+      (s as { practice_sessions?: { date: string; completed: boolean }[] })
+        .practice_sessions ?? [];
     const recentSessions = sessions.filter(
       (sess) => new Date(sess.date) >= weekAgo,
     );
@@ -71,6 +76,29 @@ export default async function TeacherDashboard() {
       tags,
       session_count: recentSessions.length,
       last_session_date: lastDate,
+      completed_dates: sessions
+        .filter((sess) => sess.completed)
+        .map((sess) => sess.date),
+    };
+  });
+
+  // Phase 1a success metric: % of students with 4+ DISTINCT completed-practice
+  // days per rolling 7-day window, over the last 4 windows (newest first).
+  const dayMs = 24 * 60 * 60 * 1000;
+  const windows: WeekWindow[] = [0, 1, 2, 3].map((weeksAgo) => {
+    const end = new Date(now.getTime() - weeksAgo * 7 * dayMs);
+    const start = new Date(end.getTime() - 6 * dayMs);
+    const startStr = start.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    const atTarget = students.filter((s) => {
+      const distinctDays = new Set(
+        s.completed_dates.filter((d) => d >= startStr && d <= endStr),
+      );
+      return distinctDays.size >= 4;
+    }).length;
+    return {
+      label: weeksAgo === 0 ? "This week" : `${weeksAgo}w ago`,
+      atTarget,
     };
   });
 
@@ -101,6 +129,8 @@ export default async function TeacherDashboard() {
         practicedToday={practicedToday}
         inactive={inactive}
       />
+
+      <MetricStrip totalStudents={students.length} windows={windows} />
 
       {students.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-gray-300 px-6 py-12 text-center">
