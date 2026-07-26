@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SessionPolicy } from "./policy";
+import { SessionPolicy, shouldEndSession } from "./policy";
 
 describe("SessionPolicy", () => {
   it("cycles blending → build_word → read_aloud_check in learn mode (P2)", () => {
@@ -68,5 +68,18 @@ describe("SessionPolicy", () => {
     p.recordCompleted("at");
     expect(p.repsFor("at")).toBe(2);
     expect(p.repsFor("an")).toBe(0);
+  });
+});
+
+describe("shouldEndSession (session abort budget)", () => {
+  it("keeps the session alive under the budget", () => {
+    expect(shouldEndSession(0)).toBe(false);
+    expect(shouldEndSession(1)).toBe(false);
+    expect(shouldEndSession(2)).toBe(false);
+  });
+
+  it("ends the session at 3 aborts — a dead transcribe endpoint must degrade to ending, not looping", () => {
+    expect(shouldEndSession(3)).toBe(true);
+    expect(shouldEndSession(4)).toBe(true);
   });
 });

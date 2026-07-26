@@ -22,6 +22,16 @@ export function selectNext(
   // 2. Otherwise learn the next frontier concept — skipping "parked" concepts
   // (learning with a future due date): their next exposure is the spaced
   // review, not more same-day checkpoints. Subject-agnostic scheduling logic.
+  //
+  // HOSTING CONSTRAINT (global engine behavior, not cartridge-tunable): any
+  // cartridge whose activities are ALL authoritative gets at most one attempt
+  // per concept per rolling 24h — the first result parks the concept until
+  // its due date. On a narrow linear concept graph this can drain the
+  // frontier after a single activity and yield null (session over). The
+  // engine is therefore intended to host cartridges with wide-enough
+  // frontiers AND formative (non-authoritative) activities between
+  // checkpoints, so a session always has non-parked work to serve. Revisit
+  // with day-granular due dates when a persistent store lands.
   const parked = new Set(
     states
       .filter((s) => s.status === "learning" && s.due !== null && s.due > now)

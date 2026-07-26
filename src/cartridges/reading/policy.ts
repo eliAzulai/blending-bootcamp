@@ -1,6 +1,19 @@
 import type { ActivityMode } from "@/engine/types";
 import type { ReadingActivityType } from "./types";
 
+/**
+ * Session abort budget: after this many aborted checkpoints (A5 transcription
+ * failures) the session ENDS instead of re-advancing. Without it, a due review
+ * always rebuilds the same read_aloud_check (activityFor ignores reps in
+ * review mode), so a dead transcribe endpoint would trap the child on an
+ * identical screen forever. Degrading to "all done" is the safe failure mode.
+ */
+export const SESSION_ABORT_BUDGET = 3;
+
+export function shouldEndSession(abortCount: number): boolean {
+  return abortCount >= SESSION_ABORT_BUDGET;
+}
+
 export interface DeviceCaps {
   ttsAvailable: boolean;
   micAvailable: boolean;

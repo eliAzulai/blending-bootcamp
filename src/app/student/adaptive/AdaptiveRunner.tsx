@@ -6,7 +6,7 @@ import { MemoryStore } from "@/engine/memory-store";
 import { SimpleScheduler } from "@/engine/scheduler";
 import type { ActivityRequest, ActivityResult } from "@/engine/types";
 import { createReadingCartridge } from "@/cartridges/reading/cartridge";
-import { SessionPolicy } from "@/cartridges/reading/policy";
+import { SessionPolicy, shouldEndSession } from "@/cartridges/reading/policy";
 import type { ReadingPayload } from "@/cartridges/reading/types";
 import { requestMicPermission } from "@/lib/speech-recognition";
 import { SessionEventLog } from "@/lib/feedback-notes";
@@ -32,6 +32,10 @@ export default function AdaptiveRunner({ studentId, builderMode }: Props) {
   // event-handler callback, not render) so the FeedbackButton context stamp
   // never has to read a ref during render.
   const [currentRep, setCurrentRep] = useState(0);
+  // Session-level abort budget (see shouldEndSession): a dead transcribe
+  // endpoint means every retry rebuilds the same checkpoint, so repeated
+  // aborts must degrade to ending the session, never trapping the child.
+  const [abortCount, setAbortCount] = useState(0);
 
   const engineRef = useRef<Engine | null>(null);
   const policyRef = useRef<SessionPolicy | null>(null);
@@ -95,8 +99,14 @@ export default function AdaptiveRunner({ studentId, builderMode }: Props) {
   const handleAbort = useCallback(async () => {
     if (current) policyRef.current!.resetCycle(current.conceptId);
     setCurrent(null);
+    const aborts = abortCount + 1;
+    setAbortCount(aborts);
+    if (shouldEndSession(aborts)) {
+      setPhase("done");
+      return;
+    }
     await advance(servedCount, micGranted);
-  }, [advance, current, micGranted, servedCount]);
+  }, [abortCount, advance, current, micGranted, servedCount]);
 
   return (
     <main className="min-h-screen bg-amber-50 px-4 py-8">
