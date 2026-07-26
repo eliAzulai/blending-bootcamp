@@ -29,11 +29,17 @@ export default function ReadAloudCheck({ conceptId, payload, onResult, onAbort }
   );
   const [phase, setPhase] = useState<Phase>("ready");
   const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
   // A delayed onResult must never fire after unmount — it would double-count
-  // in the runner's bookkeeping (servedCount / policy reps).
+  // in the runner's bookkeeping (servedCount / policy reps). mountedRef also
+  // stops a NEW timer being scheduled after unmount (the component can
+  // unmount while listen() is awaiting listenForSpeech, after this cleanup
+  // has already run).
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (resultTimerRef.current !== null) clearTimeout(resultTimerRef.current);
     };
   }, []);
@@ -41,6 +47,7 @@ export default function ReadAloudCheck({ conceptId, payload, onResult, onAbort }
   async function listen() {
     setPhase("listening");
     const heard = await listenForSpeech({ timeoutMs: 3000 });
+    if (!mountedRef.current) return;
     const step = applyListen(machine, heard);
     if (step.kind === "done") {
       setPhase("done");

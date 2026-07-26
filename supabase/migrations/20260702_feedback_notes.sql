@@ -15,8 +15,11 @@ create table if not exists feedback_notes (
 
 alter table feedback_notes enable row level security;
 
+-- Idempotent: drop-then-create so a rerun of this migration never fails.
+drop policy if exists "Owners insert own notes" on feedback_notes;
 create policy "Owners insert own notes" on feedback_notes
   for insert with check (auth.uid() = user_id);
+drop policy if exists "Owners read own notes" on feedback_notes;
 create policy "Owners read own notes" on feedback_notes
   for select using (auth.uid() = user_id);
 

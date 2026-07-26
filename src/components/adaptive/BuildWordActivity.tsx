@@ -27,6 +27,7 @@ export default function BuildWordActivity({ conceptId, payload, onResult }: Prop
   const [shake, setShake] = useState(false);
   const [solved, setSolved] = useState(false);
   const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // B1: speak the word once on start.
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function BuildWordActivity({ conceptId, payload, onResult }: Prop
   useEffect(() => {
     return () => {
       if (resultTimerRef.current !== null) clearTimeout(resultTimerRef.current);
+      if (shakeTimerRef.current !== null) clearTimeout(shakeTimerRef.current);
     };
   }, []);
 
@@ -55,7 +57,8 @@ export default function BuildWordActivity({ conceptId, payload, onResult }: Prop
     } else {
       setState(next);
       setShake(true);
-      setTimeout(() => setShake(false), 400);
+      if (shakeTimerRef.current !== null) clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = setTimeout(() => setShake(false), 400);
     }
   }
 
