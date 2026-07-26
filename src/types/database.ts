@@ -34,6 +34,13 @@ export interface Tag {
 }
 
 export type FocusAreaType = "phonics" | "spelling" | "read_aloud";
+/**
+ * Everything an activity_attempts row can be. letter_hunt is an attempt type
+ * but NOT a focus area — teachers assign the three focus areas; Letter Hunt is
+ * post-practice play recorded under its own label so its recognition scores
+ * never blend into the phonics (blending-production) signal.
+ */
+export type AttemptType = FocusAreaType | "letter_hunt";
 export type DifficultyLevel = "beginner" | "intermediate" | "advanced";
 
 export interface FocusArea {
@@ -65,10 +72,20 @@ export interface PracticeSession {
   created_at: string;
 }
 
+export type CareVerbDb = "snack" | "ball" | "treat";
+
+export interface PetCareEvent {
+  id: string;
+  student_id: string;
+  verb: CareVerbDb;
+  coins_spent: number;
+  created_at: string;
+}
+
 export interface ActivityAttempt {
   id: string;
   session_id: string;
-  activity_type: FocusAreaType;
+  activity_type: AttemptType;
   content_ref: string | null;
   score: number | null;
   duration_seconds: number;
@@ -84,6 +101,12 @@ export const FOCUS_AREA_LABELS: Record<FocusAreaType, string> = {
   phonics: "Phonics",
   spelling: "Spelling",
   read_aloud: "Read Aloud",
+};
+
+/** Labels for everything an attempt row can be (teacher surfaces). */
+export const ATTEMPT_LABELS: Record<AttemptType, string> = {
+  ...FOCUS_AREA_LABELS,
+  letter_hunt: "Letter Hunt",
 };
 
 export const PET_EMOJI: Record<PetType, string> = {
