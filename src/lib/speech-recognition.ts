@@ -122,10 +122,14 @@ export async function listenForSpeech(
       const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
       console.log("[WordPets] Recorded", blob.size, "bytes, sending to Whisper...");
 
-      // Skip tiny recordings (likely silence)
+      // A sub-1KB capture is ambiguous: true silence OR a capture failure
+      // (dead mic, muted input, recorder glitch). We flag it as an error
+      // because the cost asymmetry is decisive with a 6-year-old: falsely
+      // scoring a miss harms the child, while a free tech-retry costs
+      // nothing. (R7: a technical failure must never become a wrong read.)
       if (blob.size < 1000) {
-        console.log("[WordPets] Recording too small, skipping");
-        settle(empty);
+        console.log("[WordPets] Recording too small — flagging as capture error");
+        settle({ transcripts: [], confidence: 0, error: true });
         return;
       }
 
@@ -166,7 +170,8 @@ export async function listenForSpeech(
 
     recorder.onerror = () => {
       console.error("[WordPets] MediaRecorder error");
-      settle(empty);
+      // Device failure, not silence — must never be scored as a wrong read (R7).
+      settle({ transcripts: [], confidence: 0, error: true });
     };
 
     // Start recording
@@ -175,7 +180,8 @@ export async function listenForSpeech(
       console.log("[WordPets] Recording started,", timeoutMs, "ms");
     } catch (err) {
       console.error("[WordPets] Recorder start failed:", err);
-      settle(empty);
+      // Device failure, not silence — must never be scored as a wrong read (R7).
+      settle({ transcripts: [], confidence: 0, error: true });
       return;
     }
 
