@@ -37,7 +37,7 @@ Grouped by which question they answer. **Layer A** = computable from data we alr
 |---|---|---|---|---|
 | L1 | **Session completion rate** | `count(completed=true) / count(*)` over `practice_sessions` in window | A | Today this is `count(completed=true) / count(completed=true)` because we only insert on completion — see gap §3.1. |
 | L2 | **Time-to-first-activity** | Median seconds from session start → first `activity_attempts` row | **B** | Needs `practice_sessions.started_at`. Today only `created_at` exists and is set at completion or start depending on call site (verify). |
-| L3 | **Activity drop-off by type** | For each `activity_type`: started / abandoned / completed counts. | **B** | Needs an `outcome` enum on attempts OR a separate `activity_started_at` row. |
+| L3 | **Activity drop-off by type** | For each `activity_type`: started / abandoned / completed counts. | **B** | Needs an `outcome` enum on attempts OR a separate `activity_started_at` row. **Phase 1a-min caveat:** with phonics as the only shipped activity, the "by type" dimension is trivial — this collapses to a single drop-off rate. It becomes a genuine comparison only once ≥2 activity types ship. Still worth instrumenting now: the phonics drop-off rate alone answers "do kids bail mid-activity?" |
 | L4 | **Activity median duration** | Median `duration_seconds` per `activity_type` per difficulty | A | Proxy for engagement depth. Read-aloud duration is meaningful here even though scoring isn't (R7). |
 | L5 | **Repeat-session rate (24h)** | % of sessions where the student returns within 24h | A | Computable from `practice_sessions.date` deltas per student. |
 | L6 | **Repeat-session rate (7d)** | % of sessions where the student returns within 7d | A | Same. |

@@ -28,10 +28,12 @@ Before *any* student gets an invite token, all of the following must be true. Th
 | Activity | Beginner | Intermediate | Advanced |
 |---|---|---|---|
 | Phonics | ≥ 12 sets | ≥ 8 sets | ≥ 4 sets |
-| Spelling | ≥ 12 sets | ≥ 8 sets | ≥ 4 sets |
-| Read-aloud | ≥ 8 passages | ≥ 6 passages | ≥ 3 passages |
+| ~~Spelling~~ | — | — | — |
+| ~~Read-aloud~~ | — | — | — |
 
-**Reasoning for the numbers.** A kid practicing 4×/week at recipe length 3 (per `phase-1a-program.md` Decision 1) consumes 12 activity items per week. Rotation needs to surface non-identical content for at least 2 weeks before any repeat. 12 beginner sets gets us there with margin; the smaller intermediate/advanced numbers reflect that fewer kids are there at any moment.
+> **Scope note (2026-08-04, Phase 1a-min).** Spelling and read-aloud are **deferred** — their activity components don't exist (see `docs/content-gap-audit.md §3.1`), and building them before validating the retention thesis would cost ~5 extra weeks. The first cohort runs **phonics only**. The gate is therefore **24 phonics sets total** (12 beginner + 8 intermediate + 4 advanced), not 65 items across three activities. Spelling and read-aloud thresholds return to this table when those activities are built.
+
+**Reasoning for the numbers.** A kid practicing 4×/week at recipe length 1 (phonics only, per Phase 1a-min) consumes 4 activity items per week. Rotation needs to surface non-identical content for at least 2 weeks before any repeat, with margin for kids who practice more than 4×/week. 12 beginner sets gets us to ~3 weeks of non-repeating content; the smaller intermediate/advanced numbers reflect that fewer kids are in those bands at any moment.
 
 Every item must pass the non-negotiable rules — specifically R2 (decodable at stated difficulty), R3 (no new spelling rule inside a band), R11 (punctuation budget), R13 (sounds vs. names distinguished). The `/wordpets-content` skill generates them; Ilana spot-checks 10% before any of them ship to a kid.
 
@@ -39,10 +41,10 @@ Every item must pass the non-negotiable rules — specifically R2 (decodable at 
 
 Four specific bars, not "looks good." Each is checkable in 10 minutes:
 
-- **Home screen renders the daily recipe cleanly** on an iPad in portrait at 768×1024. Three tiles, names readable in Andika, no overflow, no Inter/system-ui leakage anywhere on a `/student/*` route.
-- **Each activity opens, runs, and closes without a console error** for a happy-path 6-year-old flow (tap, speak/type, get acknowledgment, return home).
-- **One coherent visual language** across home, all three activities, and the pet display. Not "matching pixel for pixel" — but no mix of pre-redesign and post-redesign surfaces visible to the kid in a single session.
-- **No empty states** that look like errors. If a kid finishes the recipe, the home screen says so explicitly ("All done for today! 🌟"), not just shows three greyed-out tiles.
+- **Home screen renders the daily recipe cleanly** on an iPad in portrait at 768×1024. One phonics tile (Phase 1a-min), name readable in Andika, no overflow, no Inter/system-ui leakage anywhere on a `/student/*` route.
+- **The phonics activity opens, runs, and closes without a console error** for a happy-path 6-year-old flow (tap, speak, get acknowledgment, return home).
+- **One coherent visual language** across home, the phonics activity, and the pet display. Not "matching pixel for pixel" — but no mix of pre-redesign and post-redesign surfaces visible to the kid in a single session.
+- **No empty states** that look like errors. If a kid finishes the recipe, the home screen says so explicitly ("All done for today! 🌟"), not just shows a greyed-out tile.
 
 ### 1.3 Infrastructure
 
