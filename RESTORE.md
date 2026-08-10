@@ -1,8 +1,11 @@
 # Supabase Restore Runbook
 
-> **Status 2026-08-10:** Supabase **RESTORED**. Steps 1–2 **DONE** (verified
-> below). Step 3 (OpenAI credits) is **STILL BLOCKING** — needs a human billing
-> action. Steps 4–7 remain.
+> **Status 2026-08-10: RESTORE COMPLETE — DEPLOYED.** Steps 1–5 done. Supabase
+> restored, migrations applied, OpenAI credits added and Whisper verified
+> end-to-end, `main` pushed and auto-deployed to app.wordpets.xyz, live routes
+> smoke-tested. PR #6 closed as superseded (see step 4).
+> **Remaining: step 6** (show Ilana the R26 amendment) and **step 7** (start the
+> 4-week measurement clock) — both human steps.
 
 ## 1. Restore the Supabase project — ✅ DONE (2026-08-10)
 
@@ -23,27 +26,23 @@ scripts/db.sh -f supabase/migrations/20260713_pet_reward_system.sql
 Verified 2026-08-10: `care_for_pet` RPC exists; `pet_care_events` +
 `feedback_notes` tables exist; `students_coins_nonneg` constraint present;
 `activity_attempts.activity_type` CHECK now accepts `letter_hunt`.
-Still outstanding: end-to-end RPC test (care event decrements coins
-atomically) — do this during the step 5 smoke test with a real account.
+RPC verified 2026-08-10 (inside a rolled-back transaction, no data changed):
+with `request.jwt.claims` set to the student's `parent_id`,
+`care_for_pet(<student>, 'ball')` moved coins 180 → 170, returned the new
+balance, and logged one `pet_care_events` row. Rolled back; coins back to 180.
 
 > **Gotcha:** `scripts/db.sh` passes args straight to `psql`, so a bare SQL
 > string is silently ignored (exit 0, no output). Use `scripts/db.sh -c "select …"`.
 
-## 3. Top up / rotate the OpenAI key — ❌ STILL BLOCKING
+## 3. Top up / rotate the OpenAI key — ✅ DONE (2026-08-10)
 
-`OPENAI_API_KEY` in Infisical project `2423b7fc` (blending-bootcamp) is out of
-credits (since 2026-04-23). **Re-verified 2026-08-10:** the key authenticates
-(`/v1/models` → 200) but Whisper returns
-`insufficient_quota` / `credit_balance_exhausted`.
+Credits added. **Verified end-to-end 2026-08-10:** generated speech for the word
+"cat" (`say` → webm), POSTed to `/v1/audio/transcriptions` with `whisper-1` →
+returned `{"text":"cat"}`. That is the exact format and word-shape the adaptive
+read-aloud checkpoint uses, so the authoritative mastery path is live, not just
+billing-clear.
 
-Until credits are added **`/api/transcribe` fails** → Read Aloud, the
-voice-buddy spike, the adaptive read-aloud checkpoint, and builder voice notes
-are all dead. The adaptive loop degrades safely (transcription failures are
-flagged as errors, never scored as a child's miss; session ends after 3 aborts),
-but no authoritative mastery signal can be recorded.
-
-Add credits at platform.openai.com → billing. If the key is rotated, update
-Infisical, then locally:
+If the key is ever rotated, update Infisical, then locally:
 
 ```sh
 export INFISICAL_CLIENT_ID="$(security find-generic-password -s INFISICAL_CLIENT_ID -w)"
@@ -55,14 +54,28 @@ node ~/projects/infisical/pull-env.js 2423b7fc-bb02-4075-aba8-d7d04aacc820 prod 
 Infisical machine-identity credentials; the two exports above are required.)
 Redeploy for prod.
 
-## 4. Merge/deploy the restore-gated PRs
+## 4. Restore-gated PRs — ✅ RESOLVED (2026-08-10)
 
-- PR #6 (gated on restore — see project memory).
+- **PR #6 CLOSED as superseded**, not merged. Branched 2026-07-06, 25 commits
+  behind; its Sound Hunt duplicates `LetterHuntGame` and its **drag**-based Word
+  Builder contradicts the **tap-to-place** decision (spec B7, re-confirmed
+  2026-08-10). Its `pickFormat` fixed rotation also predates the engine, which
+  now chooses from mastery state. Branch `claude/clever-golick-86f785` is
+  deliberately **NOT deleted** — Missing Word / cloze, `useTileDrag`, WebAudio
+  SFX and the 9 cloze content sets are salvage targets (Todoist, WordPets p3).
+  Its migration `supabase/migration-2026-07-06-mini-activities.sql` was NOT
+  applied; it belongs with the salvage.
 - `main` already carries the pet reward system (merged 2026-07-18).
 
-## 5. Deploy and smoke-test
+## 5. Deploy and smoke-test — ⚠️ DEPLOYED, interactive pass still owed
 
-Deploy `main` to app.wordpets.xyz, then with a real test student account:
+**Deployed 2026-08-10:** `main` pushed (`89314fd`), Vercel auto-deploy landed in
+~15s. Live smoke (unauthenticated): `/` 200, `/login` 200, `/student` 307,
+`/teacher` 307, `/student/adaptive` 307 (auth redirect — the route exists),
+`POST /api/transcribe` 401 (auth-gated, not 5xx).
+
+**Still owed — the authenticated click-through below.** It needs a real student
+login, so it is a human step. With a real test student account:
 
 1. `/student` renders; care buttons appear (verb hidden if unaffordable).
 2. Tap a care verb → reaction plays, coins decrement, refresh persists it.
