@@ -1,36 +1,59 @@
 # Supabase Restore Runbook
 
-The Supabase project (legacy name `blending-bootcamp`) is **paused** (as of
-2026-07-13, second pause). Everything below is gated on restoring it. Run the
-steps in order; each is blocking for the ones after it.
+> **Status 2026-08-10:** Supabase **RESTORED**. Steps 1–2 **DONE** (verified
+> below). Step 3 (OpenAI credits) is **STILL BLOCKING** — needs a human billing
+> action. Steps 4–7 remain.
 
-## 1. Restore the Supabase project
+## 1. Restore the Supabase project — ✅ DONE (2026-08-10)
 
-Supabase dashboard → project → Restore. Paused projects keep their data;
-verify the `students`, `practice_sessions`, `content` tables have rows after
-restore before proceeding.
+Supabase dashboard → project → Restore. Paused projects keep their data.
 
-## 2. Apply the pet reward system migration (BEFORE any deploy)
+Verified after restore: `students` = 3, `practice_sessions` = 20, `content` = 35.
+
+## 2. Apply migrations (BEFORE any deploy) — ✅ DONE (2026-08-10)
 
 ```sh
+scripts/db.sh -f supabase/migrations/20260702_feedback_notes.sql
 scripts/db.sh -f supabase/migrations/20260713_pet_reward_system.sql
 ```
 
-Creates `pet_care_events` + RLS, the `care_for_pet` RPC, the
-`students.coins >= 0` constraint, and extends `activity_attempts.activity_type`
-with `letter_hunt`. The app build on `main` fails closed without it (care UI
-hides itself), but the feature is dead until this runs.
+`20260618_restrict_invite_tokens.sql` was already applied pre-pause (policy
+`Teachers manage own invites` present) — do not re-run blindly.
 
-Verify: `select proname from pg_proc where proname = 'care_for_pet';` returns
-one row, and inserting a care event via the RPC as a test parent decrements
-coins atomically.
+Verified 2026-08-10: `care_for_pet` RPC exists; `pet_care_events` +
+`feedback_notes` tables exist; `students_coins_nonneg` constraint present;
+`activity_attempts.activity_type` CHECK now accepts `letter_hunt`.
+Still outstanding: end-to-end RPC test (care event decrements coins
+atomically) — do this during the step 5 smoke test with a real account.
 
-## 3. Top up / rotate the OpenAI key
+> **Gotcha:** `scripts/db.sh` passes args straight to `psql`, so a bare SQL
+> string is silently ignored (exit 0, no output). Use `scripts/db.sh -c "select …"`.
+
+## 3. Top up / rotate the OpenAI key — ❌ STILL BLOCKING
 
 `OPENAI_API_KEY` in Infisical project `2423b7fc` (blending-bootcamp) is out of
-credits (since 2026-04-23). Whisper transcription (`/api/transcribe`, Read
-Aloud) and the voice-buddy spike are dead until topped up. After updating
-Infisical: `npm run pull-secrets` locally; redeploy for prod.
+credits (since 2026-04-23). **Re-verified 2026-08-10:** the key authenticates
+(`/v1/models` → 200) but Whisper returns
+`insufficient_quota` / `credit_balance_exhausted`.
+
+Until credits are added **`/api/transcribe` fails** → Read Aloud, the
+voice-buddy spike, the adaptive read-aloud checkpoint, and builder voice notes
+are all dead. The adaptive loop degrades safely (transcription failures are
+flagged as errors, never scored as a child's miss; session ends after 3 aborts),
+but no authoritative mastery signal can be recorded.
+
+Add credits at platform.openai.com → billing. If the key is rotated, update
+Infisical, then locally:
+
+```sh
+export INFISICAL_CLIENT_ID="$(security find-generic-password -s INFISICAL_CLIENT_ID -w)"
+export INFISICAL_CLIENT_SECRET="$(security find-generic-password -s INFISICAL_CLIENT_SECRET -w)"
+node ~/projects/infisical/pull-env.js 2423b7fc-bb02-4075-aba8-d7d04aacc820 prod .env.local
+```
+
+(`npm run pull-secrets` alone fails with a 422 — it does not export the
+Infisical machine-identity credentials; the two exports above are required.)
+Redeploy for prod.
 
 ## 4. Merge/deploy the restore-gated PRs
 
