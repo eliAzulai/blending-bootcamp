@@ -50,3 +50,6 @@ supabase/.temp/
 
 # buddy spike: local session exports (child data — never committed)
 spike-data/
+
+# netlify CLI link state (site id is recorded in the cohort-1 launch plan)
+marketing/zoom-classes/.netlify/
