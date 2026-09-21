@@ -54,7 +54,7 @@
 2. Warm-family probe: WhatsApp 6-10 families (scripts in §5). Goal: 3+ "yes, at slot X" before the page goes to anyone else.
 3. ✅ 2026-09-18 Landing page recopied to grades 3-6 with the structured Netlify form (`marketing/zoom-classes/index.html`, success page `thanks.html`). Guarded by `src/lib/cohort/landing-page.test.ts`. **Still owed: deploy + record the live URL here:** `[URL]`.
 4. ✅ 2026-09-18 Clustering tool: `npx tsx scripts/cluster-cohort.ts <netlify-export.csv> --min 2` groups responses by slot + reading stage and names the first viable cohort (`src/lib/cohort/cluster.ts`, tested). Export the Netlify form CSV, add a `paid` column (yes/no) by hand as Bit transfers land, re-run. Ilana never sees raw replies.
-5. Preservation sweep (finally): commit `handoff.md`, both launch specs, this plan, `marketing/`; push local-only branches. Half a day; protects the plan of record.
+5. ✅ 2026-09-21 Preservation sweep: plan of record committed (cb071c9) and on origin; `feat/reading-cartridge`, `wave1-backup`, `claude/wonderful-easley-c10f28` pushed (security branch needed GitHub push-protection unblocks for its synthetic test tokens). Only `wordpets_comics-il` archive still open (Todoist).
 
 **Week 1 — Thu 09-24 → Sat 10-03 (enrollment window = chag)**
 6. Send the page link to the warm list + referrals. Eli clusters replies daily; nudges once mid-week.
@@ -141,4 +141,5 @@ App rebuild, cohort/booking/billing software, Teacher Studio, comics, songs/vide
 
 ## 10. Log
 
+- 2026-09-21 — push landed: main + 3 branches on origin. Deploy still owed.
 - 2026-09-18 — plan written; Eli answered D1-D10 same day (§3). Landing page recopied + form + clustering tool built and tested (294 vitest green). Deploy and live URL pending. Ilana still owes: D7 wording, confirmation of "2 per zoom" reading, exact Wed/Thu times, D8 income numbers.
