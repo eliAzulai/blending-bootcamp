@@ -10,7 +10,7 @@
 ## 1. Where we are (audited 2026-09-18)
 
 - The strategy was decided 2026-06-30 and re-confirmed by the 2026-07-13 Pareto audit. **Since then: zero cohort execution.** All effort went to app (reading cartridge, pet reward, Supabase restore 2026-08-10) and songs/video (last touched 2026-08-11).
-- `marketing/zoom-classes/index.html` still says "Ages 6-8" in 5 places and its only CTA is `mailto:` + WhatsApp. Unmodified since 2026-06-21. Deployed on Netlify (site `9fcda0ea…`, live URL not recorded anywhere in the repo).
+- `marketing/zoom-classes/index.html` still says "Ages 6-8" in 5 places and its only CTA is `mailto:` + WhatsApp. Unmodified since 2026-06-21. Deployed on Netlify at https://mywordpets.netlify.app (site `9fcda0ea…`; URL recovered 2026-09-22 by probing, it was recorded nowhere).
 - Todoist: "Warm-family cohort probe + get Ilana's launch numbers" (p1, due 2026-07-15) and "Preservation sweep" (p2, due 2026-07-16) are both still open and overdue.
 - Nothing cohort-related in Google Calendar.
 - No "Cohort Launch OS" document exists anywhere on disk. `project-room/` (both copies) documents the app, not the cohort.
@@ -52,7 +52,7 @@
 **Week 0 — Thu 09-18 → Wed 09-23 (decide + build the funnel)**
 1. Ilana answers D1-D10 (one sitting, 30 min). Eli records answers in this file.
 2. Warm-family probe: WhatsApp 6-10 families (scripts in §5). Goal: 3+ "yes, at slot X" before the page goes to anyone else.
-3. ✅ 2026-09-18 Landing page recopied to grades 3-6 with the structured Netlify form (`marketing/zoom-classes/index.html`, success page `thanks.html`). Guarded by `src/lib/cohort/landing-page.test.ts`. **Still owed: deploy + record the live URL here:** `[URL]`.
+3. ✅ 2026-09-18 Landing page recopied to grades 3-6 with the structured Netlify form (`marketing/zoom-classes/index.html`, success page `thanks.html`). Guarded by `src/lib/cohort/landing-page.test.ts`. Live URL: **https://mywordpets.netlify.app** (Netlify account yaneccles@gmail.com, team created 2026-06-15). **Checked 2026-09-22: still serving the OLD 'Ages 6-8' page — deploy not done yet.**
 4. ✅ 2026-09-18 Clustering tool: `npx tsx scripts/cluster-cohort.ts <netlify-export.csv> --min 2` groups responses by slot + reading stage and names the first viable cohort (`src/lib/cohort/cluster.ts`, tested). Export the Netlify form CSV, add a `paid` column (yes/no) by hand as Bit transfers land, re-run. Ilana never sees raw replies.
 5. ✅ 2026-09-21 Preservation sweep: plan of record committed (cb071c9) and on origin; `feat/reading-cartridge`, `wave1-backup`, `claude/wonderful-easley-c10f28` pushed (security branch needed GitHub push-protection unblocks for its synthetic test tokens). Only `wordpets_comics-il` archive still open (Todoist).
 
@@ -79,7 +79,7 @@
 > Hi [name], Ilana's opening one small online reading group this term for grades 3-6 kids who speak English well but struggle to read or write it. Fixed [day] [time], 4-6 kids, 8 weeks, [price]. Is that something you'd consider for [child]? Which afternoon works: [slot A] or [slot B]?
 
 **C — follow-up to a "maybe"**
-> Thanks! To hold a spot the first week is paid and refundable if it's not a fit. Link with details + the sign-up form: [URL]. Ilana will run it as soon as two kids fit the same afternoon.
+> Thanks! To hold a spot the first week is paid and refundable if it's not a fit. Link with details + the sign-up form: https://mywordpets.netlify.app Ilana will run it as soon as two kids fit the same afternoon.
 
 Fill-ins for A and B: price = 500₪/month, slots = Wednesday or Thursday afternoon, N = 2.
 
@@ -141,5 +141,6 @@ App rebuild, cohort/booking/billing software, Teacher Studio, comics, songs/vide
 
 ## 10. Log
 
+- 2026-09-22 — Netlify check: https://mywordpets.netlify.app still serves the old page (5× 'Ages 6-8', no form, thanks.html 404). CLI login on the Mac never completed. Deploy still owed.
 - 2026-09-21 — push landed: main + 3 branches on origin. Deploy still owed.
 - 2026-09-18 — plan written; Eli answered D1-D10 same day (§3). Landing page recopied + form + clustering tool built and tested (294 vitest green). Deploy and live URL pending. Ilana still owes: D7 wording, confirmation of "2 per zoom" reading, exact Wed/Thu times, D8 income numbers.
